@@ -2,8 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radio France Background Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Radio France Mobile & Auto</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
     <style>
         :root {
             --bg-color: #121212;
@@ -11,6 +13,9 @@
             --text-color: #e0e0e0;
             --accent-color: #1db954;
             --secondary-text: #b3b3b3;
+            --star-color: #ffca28;
+            --header-height: 60px;
+            --player-height: 90px;
         }
 
         body {
@@ -23,53 +28,70 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
         header {
-            padding: 1rem;
-            background-color: rgba(0,0,0,0.8);
+            height: var(--header-height);
+            padding: 0 1rem;
+            background-color: rgba(0,0,0,0.9);
             backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             z-index: 100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
-        .search-container {
-            max-width: 600px;
-            margin: 0 auto;
-            position: relative;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         #search-input {
-            width: 100%;
-            padding: 0.8rem 1rem;
+            flex: 1;
+            max-width: 300px;
+            padding: 0.6rem 1rem;
             border-radius: 20px;
             border: none;
             background-color: #333;
             color: white;
             font-size: 1rem;
             outline: none;
-            box-sizing: border-box;
         }
 
-        #search-input:focus {
-            background-color: #444;
-            box-shadow: 0 0 0 2px var(--accent-color);
+        .mode-toggle {
+            background-color: #333;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mode-toggle.active {
+            background-color: var(--accent-color);
         }
 
         main {
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
-            padding-bottom: 120px; /* Space for player */
+            padding-bottom: calc(var(--player-height) + 20px);
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
         }
 
         .radio-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 1rem;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -82,14 +104,14 @@
             align-items: center;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
+            transition: transform 0.1s, background-color 0.2s;
             position: relative;
-            overflow: hidden;
+            user-select: none;
         }
 
-        .radio-card:hover {
+        .radio-card:active {
+            transform: scale(0.95);
             background-color: #282828;
-            transform: translateY(-4px);
         }
 
         .radio-card.active {
@@ -97,38 +119,60 @@
             background-color: #282828;
         }
 
-        .logo-placeholder {
-            width: 80px;
-            height: 80px;
+        .fav-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: #555;
+            font-size: 1.2rem;
+            padding: 5px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .fav-btn.active {
+            color: var(--star-color);
+        }
+
+        .logo-container {
+            width: 70px;
+            height: 70px;
             background-color: #333;
-            border-radius: 50%;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.8rem;
             margin-bottom: 0.8rem;
-            background-size: cover;
+            background-size: contain;
+            background-repeat: no-repeat;
             background-position: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
 
         .radio-name {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            height: 2.4rem;
+            height: 2.2rem;
+            line-height: 1.1rem;
         }
 
+        /* Player Bar */
         .player-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
+            height: var(--player-height);
             background-color: #181818;
             border-top: 1px solid #282828;
-            padding: 0.8rem 1rem;
+            padding: 0 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -138,21 +182,24 @@
         .current-info {
             display: flex;
             align-items: center;
-            width: 30%;
-            min-width: 150px;
+            width: 40%;
+            overflow: hidden;
         }
 
         .current-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 4px;
-            margin-right: 0.8rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            margin-right: 12px;
             background-color: #333;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
-            background-size: cover;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            flex-shrink: 0;
         }
 
         .current-text {
@@ -161,7 +208,7 @@
 
         .current-name {
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 700;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -174,20 +221,14 @@
 
         .player-controls {
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             flex: 1;
         }
 
-        .buttons {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
         .play-btn {
-            width: 40px;
-            height: 40px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             background-color: white;
             color: black;
@@ -196,56 +237,78 @@
             justify-content: center;
             border: none;
             cursor: pointer;
+            font-size: 1.5rem;
+            transition: transform 0.1s;
+        }
+
+        .play-btn:active {
+            transform: scale(0.9);
+        }
+
+        .play-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Car Mode Styles */
+        body.car-mode {
+            --header-height: 80px;
+            --player-height: 120px;
+        }
+
+        body.car-mode #search-input {
+            display: none;
+        }
+
+        body.car-mode .radio-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.5rem;
+        }
+
+        body.car-mode .radio-card {
+            padding: 1.5rem;
+            border-radius: 20px;
+        }
+
+        body.car-mode .logo-container {
+            width: 100px;
+            height: 100px;
+            font-size: 2.5rem;
+        }
+
+        body.car-mode .radio-name {
+            font-size: 1.1rem;
+            height: 2.8rem;
+            line-height: 1.4rem;
+        }
+
+        body.car-mode .play-btn {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+
+        body.car-mode .current-logo {
+            width: 70px;
+            height: 70px;
+        }
+
+        body.car-mode .current-name {
             font-size: 1.2rem;
         }
 
-        .play-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .volume-container {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            width: 30%;
-            justify-content: flex-end;
-            min-width: 100px;
-        }
-
-        #volume-slider {
-            width: 80px;
-            accent-color: var(--accent-color);
-        }
-
-        /* Mobile adjustments */
-        @media (max-width: 600px) {
-            .volume-container {
-                display: none;
-            }
-            .current-info {
-                width: 70%;
-            }
-            .player-controls {
-                flex: none;
-            }
-        }
-
         .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0,0,0,0.1);
             border-radius: 50%;
-            border-top-color: white;
+            border-top-color: black;
             animation: spin 1s linear infinite;
             display: none;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
-        }
-
-        .playing .loading-spinner {
-            display: none;
         }
 
         .buffering .loading-spinner {
@@ -255,19 +318,33 @@
         .buffering .play-icon {
             display: none;
         }
+
+        .empty-favorites {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-text);
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="search-container">
-        <input type="text" id="search-input" placeholder="Rechercher une radio...">
+    <div class="header-left">
+        <span style="font-size: 1.5rem;">📻</span>
+        <button id="car-mode-toggle" class="mode-toggle" title="Mode Voiture">
+            🚗 <span>Auto</span>
+        </button>
+    </div>
+    <div class="search-box" style="flex: 1; display: flex; align-items: center; gap: 5px; max-width: 400px;">
+        <input type="text" id="search-input" placeholder="Rechercher...">
+        <button id="voice-search" class="mode-toggle" style="padding: 0.5rem;" title="Recherche vocale">🎤</button>
     </div>
 </header>
 
 <main>
     <div class="radio-grid" id="radio-grid">
-        <!-- Radio cards will be injected here -->
+        <!-- Radio cards injected here -->
     </div>
 </main>
 
@@ -275,30 +352,28 @@
     <div class="current-info">
         <div class="current-logo" id="current-logo">📻</div>
         <div class="current-text">
-            <div class="current-name" id="current-name">Sélectionnez une radio</div>
-            <div class="current-status" id="current-status">Arrêté</div>
+            <div class="current-name" id="current-name">Prêt à écouter</div>
+            <div class="current-status" id="current-status">Choisissez une station</div>
         </div>
     </div>
 
     <div class="player-controls">
-        <div class="buttons">
-            <button class="play-btn" id="play-btn" disabled>
-                <span class="play-icon" id="play-icon">▶</span>
-                <div class="loading-spinner" id="loading-spinner"></div>
-            </button>
-        </div>
+        <button class="play-btn" id="play-btn" disabled>
+            <span class="play-icon" id="play-icon">▶</span>
+            <div class="loading-spinner" id="loading-spinner"></div>
+        </button>
     </div>
 
-    <div class="volume-container">
-        <span>🔊</span>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+    <div style="width: 40px; display: flex; justify-content: flex-end;">
+        <!-- Space filler for symmetry -->
     </div>
 </div>
 
-<audio id="audio-player" playsinline></audio>
+<audio id="audio-player" playsinline preload="none"></audio>
 
 <script>
-    const radioData = [{"name": "France Inter", "url": "http://direct.franceinter.fr/live/franceinter-midfi.mp3", "logo": null}, {"name": "France Info", "url": "https://icecast.radiofrance.fr/franceinfo-midfi.mp3", "logo": null}, {"name": "France Culture", "url": "https://direct.franceculture.fr/live/franceculture-midfi.mp3", "logo": null}, {"name": "RTL", "url": "https://icecast.rtl.fr/rtl-1-44-128?listen=webDQcCCwwIBwMFBgUABAwDDg", "logo": null}, {"name": "RTL 2", "url": "https://live.m6radio.quortex.io/webpHJPXnXrN7B6J7Q8mcqmxP/grouprtl2/national/long/audio-64000/index.m3u8", "logo": null}, {"name": "Europe 1", "url": "https://stream.europe1.fr/europe1.mp3?aw_0_1st.playerid=lgrdrnwsradio-en-lignefr", "logo": null}, {"name": "NRJ", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30001/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "NRJ ACOUSTIC HITS", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30157/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Acoustic-Hits", "logo": null}, {"name": "NRJ AFRO HITS", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57770/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Afro-Hits", "logo": null}, {"name": "NRJ ALL HITS ALL STYLES", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31149/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-All-Hits-All-Styles", "logo": null}, {"name": "NRJ AT HOME", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31011/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-At-Home", "logo": null}, {"name": "NRJ AT WORK", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30033/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-At-Work", "logo": null}, {"name": "NRJ BEST HITS EVER", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31251/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Best-Hits-Ever", "logo": null}, {"name": "NRJ BEST OF 2022", "url": "https://scdn.nrjaudio.fm/adwz1/fr/58404/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Best-Of-2022", "logo": null}, {"name": "NRJ BIG PARTY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/58314/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Big-Party", "logo": null}, {"name": "NRJ BONNE ANNEE 2023", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57985/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Bonne-Annee-2023", "logo": null}, {"name": "Skyrock", "url": "https://www.skyrock.fm/stream.php/mytuner_128mp3.mp3", "logo": null}, {"name": "Hit Skyrock", "url": "https://skyrock.fm/stream_webradio.php/mytuner_hit-skyrock_64aac.aac", "logo": null}, {"name": "Radio Peinard Skyrock", "url": "http://str2.creacast.com:80/radio_peinard", "logo": null}, {"name": "Skyrock 100% Français", "url": "https://skyrock.fm/stream_webradio.php/mytuner_francais_64aac.aac", "logo": null}, {"name": "Skyrock Abidjan", "url": "https://skyrock.fm/stream_webradio.php/mytuner_abidjan_64aac.aac", "logo": null}, {"name": "Skyrock Hit U.S", "url": "https://skyrock.fm/stream_webradio.php/mytuner_hit-us_64aac.aac", "logo": null}, {"name": "Skyrock Klassiks", "url": "https://skyrock.fm/stream_webradio.php/mytuner_klassiks_64aac.aac", "logo": null}, {"name": "Skyrock La Nocturne", "url": "https://skyrock.fm/stream_webradio.php/mytuner_nocturne_64aac.aac", "logo": null}, {"name": "Skyrock PLM", "url": "https://skyrock.fm/stream_webradio.php/mytuner_plm_64aac.aac", "logo": null}, {"name": "Skyrock Premier sur le Rap", "url": "https://skyrock.fm/stream_webradio.php/mytuner_1er-rap_64aac.aac", "logo": null}, {"name": "Fun Radio FRANCE", "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webDQcCCwwIBwMFBgUABAwDDg", "logo": null}, {"name": "RMC", "url": "https://rmc2hdslive-lh.akamaihd.net/i/DVMR_RMC@167269/master.m3u8", "logo": null}, {"name": "NOSTALGIE", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30601/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "NOSTALGIE 100% FRANCAIS 80", "url": "https://scdn.nrjaudio.fm/adwz1/fr/56164/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-100-Francais-80", "logo": null}, {"name": "NOSTALGIE 80 LES TUBES N° 1", "url": "https://scdn.nrjaudio.fm/adwz1/fr/56726/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-80-Les-Tubes-N-1", "logo": null}, {"name": "NOSTALGIE BEACH PARTY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57258/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Beach-Party", "logo": null}, {"name": "NOSTALGIE BEST OF 60", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30615/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-60", "logo": null}, {"name": "NOSTALGIE BEST OF 70", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30613/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-1970", "logo": null}, {"name": "NOSTALGIE BEST OF 80", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30605/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-80", "logo": null}, {"name": "NOSTALGIE BEST OF 80 90", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57831/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-Of-80-90", "logo": null}, {"name": "NOSTALGIE BEST OF 90", "url": "https://scdn.nrjaudio.fm/adwz1/fr/55206/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-Of-90", "logo": null}, {"name": "NOSTALGIE BLUES", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30639/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Blues", "logo": null}, {"name": "Chérie FM Soft Rock", "url": "http://mp3.live.tv-radio.com/3197/cherie_soft_rock/che_121156.mp3", "logo": null}, {"name": "FIP", "url": "https://direct.fipradio.fr/live/fip-midfi.mp3", "logo": null}, {"name": "FIP Nouveautés", "url": "https://direct.fipradio.fr/live/fip-webradio5.mp3?ID=radiofrance", "logo": null}, {"name": "FIP POP", "url": "https://stream.radiofrance.fr/fippop/fippop_hifi.m3u8", "logo": null}, {"name": "FIP autour de l’électro", "url": "https://icecast.radiofrance.fr/fipelectro-midfi.mp3", "logo": null}, {"name": "FIP autour du groove", "url": "http://direct.fipradio.fr/live/fip-webradio3.mp3", "logo": null}, {"name": "FIP autour du jazz", "url": "http://direct.fipradio.fr/live/fip-webradio2.mp3", "logo": null}, {"name": "FIP autour du monde", "url": "http://direct.fipradio.fr/live/fip-webradio4.mp3", "logo": null}, {"name": "FIP autour du reggae", "url": "https://direct.fipradio.fr/live/fip-webradio6.mp3", "logo": null}, {"name": "FIP autour du rock", "url": "http://direct.fipradio.fr/live/fip-webradio1.mp3", "logo": null}, {"name": "FIP à Bordeaux", "url": "https://direct.fipradio.fr/live/fipbordeaux-midfi.mp3", "logo": null}, {"name": "Mouv 100% Mix", "url": "https://direct.mouv.fr/live/mouvxtra-midfi.mp3", "logo": null}, {"name": "Mouv Classics", "url": "https://stream.radiofrance.fr/mouvclassics/mouvclassics_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv DanceHall", "url": "https://stream.radiofrance.fr/mouvdancehall/mouvdancehall_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Kids ‘n Family", "url": "https://stream.radiofrance.fr/mouvkidsnfamily/mouvkidsnfamily_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Rap Français", "url": "https://stream.radiofrance.fr/mouvrapfr/mouvrapfr_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Rap US", "url": "https://stream.radiofrance.fr/mouvrapus/mouvrapus_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv RnB & Soul", "url": "https://stream.radiofrance.fr/mouvrnb/mouvrnb_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv’", "url": "https://direct.mouv.fr/live/mouv-midfi.mp3", "logo": null}, {"name": "Europe 2", "url": "https://europe2.lmn.fm/europe2.aac?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Classics", "url": "https://wr.lmn.fm/vr-wr2.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Happy Rock Hours", "url": "https://wr.lmn.fm/vr-wr5.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Hits", "url": "https://wr.lmn.fm/vr-wr4.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 New", "url": "https://wr.lmn.fm/vr-wr1.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Nouvelle Scène", "url": "https://wr.lmn.fm/vr-wr8.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "RFM", "url": "https://stream.rfm.fr/rfm.aac?aw_0_1st.playerid=lgrdrnwsradio-en-lignefr", "logo": null}, {"name": "RFM 100 % Français", "url": "https://stream.rfm.fr/rfm-wr11.aac", "logo": null}, {"name": "RFM 100 % New Wave", "url": "https://stream.rfm.fr/rfm-wr12.aac", "logo": null}, {"name": "RFM 40 ans du Meilleur de la Musique", "url": "https://wr.lmn.fm/rfm-wr9.mp3?aw_0_1st.playerid=lgrdnws", "logo": null}, {"name": "RFM 70’s", "url": "https://stream.rfm.fr/rfm-wr16.aac", "logo": null}, {"name": "RFM 80’s", "url": "https://stream.rfm.fr/rfm-wr4.aac", "logo": null}, {"name": "RFM Christmas", "url": "https://wr.lmn.fm/rfm-wr6.mp3", "logo": null}, {"name": "RFM Collector", "url": "https://wr.lmn.fm/rfm-wr1.mp3?aw_0_1st.playerid=lgrdnwsMytuner", "logo": null}, {"name": "RFM Hit Party", "url": "https://stream.rfm.fr/rfm-wr8.aac", "logo": null}, {"name": "RFM La radio Couleur", "url": "http://rfm-wr3.akamaized.net/rfm.isml/wr3-rfm.m3u8", "logo": null}, {"name": "France Musique", "url": "https://direct.francemusique.fr/live/francemusique-midfi.mp3", "logo": null}, {"name": "France Musique Classique Plus", "url": "https://icecast.radiofrance.fr/francemusiqueclassiqueplus-midfi.mp3", "logo": null}, {"name": "France Musique La Contemporaine", "url": "https://direct.fipradio.fr/live/francemusiquelacontemporaine-hifi.mp3", "logo": null}, {"name": "100% Radio", "url": "https://100radio-albi.ice.infomaniak.ch/100radio-albi-128.mp3", "logo": null}, {"name": "100% Radio 90s", "url": "http://100radio-90.ice.infomaniak.ch/100radio-90-64.aac", "logo": null}, {"name": "100% Radio Souvenirs", "url": "https://100radio-souvenirs.ice.infomaniak.ch/100radio-souvenirs-128.mp3", "logo": null}, {"name": "123 Radio", "url": "https://play.vestaradio.com/123radio.mp3", "logo": null}, {"name": "47 FM", "url": "https://47fm.ice.infomaniak.ch/47fm-agen.mp3", "logo": null}, {"name": "4U Classic Rock", "url": "http://stric6.streamakaci.com/4uclassicrock.mp3", "logo": "http://radio.pervii.com/im/0/1549696980.jpg"}, {"name": "A4i Club Radio", "url": "http://31.12.68.206/A4iClubbingRadio.m3u", "logo": null}, {"name": "A9RADIO", "url": "http://195.154.217.103:8175/stream/1/", "logo": "http://radio.pervii.com/im/4/1577086984.jpg"}, {"name": "AIR GAY RADIO", "url": "https://ecmanager.pro-fhi.net:2505/stream", "logo": null}, {"name": "AQUITAINE FM", "url": "http://radio.myftp.biz:8000/stream.mp3", "logo": null}, {"name": "ATOMIC RADIO", "url": "http://radios.topymedia.com:8032/stream/1/", "logo": "http://radio.pervii.com/im/8/1594215758.jpg"}, {"name": "Addict Radio Lounge", "url": "https://www.addictradio.net/extern/pl/lounge/hditunes.m3u", "logo": null}, {"name": "Africa Mandingue", "url": "https://webradio1.ice.infomaniak.ch/webradio2-128.mp3", "logo": null}, {"name": "Agora Côte d’Azur", "url": "https://agoracotedazur.ice.infomaniak.ch/agoracotedazur.mp3", "logo": null}, {"name": "AirZen Musique", "url": "https://streams.airzen.fr/musique", "logo": null}, {"name": "AirZen Radio", "url": "https://streams.airzen.fr/", "logo": null}, {"name": "Airtime!", "url": "http://vh11367x.out.airtime.pro:8000/vh11367x_a", "logo": "http://radio.pervii.com/im/6/1549788306.jpg"}, {"name": "Allzic Radio Années 50", "url": "https://allzic29.ice.infomaniak.ch/allzic29.mp3", "logo": null}, {"name": "Allzic Radio COMPTINES", "url": "https://allzic05.ice.infomaniak.ch/allzic05.mp3", "logo": null}, {"name": "Allzic Radio DANCEFLOOR", "url": "https://allzic07.ice.infomaniak.ch/allzic07.mp3", "logo": null}, {"name": "Allzic Radio DISCO", "url": "https://allzic31.ice.infomaniak.ch/allzic31.aac", "logo": null}, {"name": "Allzic Radio ENFANTS 0/4 ANS", "url": "https://allzic14.ice.infomaniak.ch/allzic14.mp3", "logo": null}, {"name": "Allzic Radio HARD AND HEAVY", "url": "https://allzic18.ice.infomaniak.ch/allzic18.mp3", "logo": null}, {"name": "Allzic Radio LATINO", "url": "https://allzic39.ice.infomaniak.ch/allzic39.mp3", "logo": null}, {"name": "Alta Frequenza", "url": "https://altafrequenza.ice.infomaniak.ch/altafrequenza-128.mp3", "logo": null}, {"name": "Ambient Modern", "url": "http://163.172.169.217:80/stream/1/", "logo": "http://radio.pervii.com/im/7/1561156497.jpg"}, {"name": "B4B RADIO DISCO FUNK OFFICIAL", "url": "https://eu10.fastcast4u.com:8120/stream/1/", "logo": "http://radio.pervii.com/im/9/1537582629.jpg"}, {"name": "BBR CLUB 80 99.3", "url": "https://radio.streemlion.com:1935/stream", "logo": null}, {"name": "BPM FM", "url": "http://str20.creacast.com/bpm", "logo": null}, {"name": "BackLive", "url": "https://www.radioking.com/play/backlive", "logo": null}, {"name": "Beur Kabyle", "url": "http://broadcast.infomaniak.ch/beurfm-kabyle-high.mp3", "logo": null}, {"name": "Blackbox Latina", "url": "http://blackboxlatina.bcast.infomaniak.ch/blackboxlatina-128.mp3", "logo": null}, {"name": "Bob&#039;s Ska Radio (Low Bitrate)", "url": "http://51.255.235.165:5528/", "logo": "http://radio.pervii.com/im/9/1571841589.jpg"}, {"name": "Bob&apos;s Ska Radio", "url": "http://51.255.235.165:5528/stream/1/", "logo": "http://radio.pervii.com/im/1/1550051481.jpg"}, {"name": "Brasiltuga", "url": "https://node-16.zeno.fm/r7crx0k167zuv", "logo": null}, {"name": "CFTA-FM", "url": "http://176.31.118.39:14808/stream/1/", "logo": "http://radio.pervii.com/im/0/1550155110.jpg"}, {"name": "CHERIE FM", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30201/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "CHERIE HAPPY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30331/mp3_128.mp3?origine=mytuner&aw_0_1st.station=CHERIE-HAPPY", "logo": null}, {"name": "Canal108 Webradio", "url": "https://www.radioking.com/play/canal-108", "logo": null}, {"name": "Cannes Radio", "url": "https://stream.rcs.revma.com/2ykc70sauwzuv.mp3", "logo": null}, {"name": "Cause Commune", "url": "https://stream.causecommune.fm/voixdulat_mp3", "logo": null}, {"name": "Chante France 70&#039;s", "url": "https://chantefrance70s.ice.infomaniak.ch/chantefrance70s-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Chante France 80&#039;s", "url": "https://chantefrance80s.ice.infomaniak.ch/chantefrance80s-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Chante France Emotion", "url": "https://chantefranceemotion.ice.infomaniak.ch/chantefranceemotion-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Cocktail FM", "url": "https://listen.radioking.com/radio/245467/stream/289642", "logo": null}, {"name": "Commodexplorer Radio", "url": "https://manager3.streamradio.fr:1105/stream", "logo": null}, {"name": "Comète FM", "url": "http://str2.creacast.com/cometefm", "logo": null}, {"name": "Crooner Radio Barbra Streisand", "url": "https://direct.croonerradio.fr/croonerradio-barbrastreisand-midfi.mp3", "logo": null}, {"name": "Crooner Radio Classic Gold", "url": "https://croonerradio_classicgold.ice.infomaniak.ch/croonerradio-classicgold-midfi.mp3", "logo": null}, {"name": "Crooner Radio Premium", "url": "http://stream.crooner.fr/enc1_crooner_sd", "logo": null}]; // To be filled
+    const radioData =
+[{"name": "100% Radio", "url": "http://100radio-albi.ice.infomaniak.ch/100radio-albi-128.mp3", "website": "http://www.centpourcent.com/", "logo": "https://logo.clearbit.com/centpourcent.com"}, {"name": "432Hz Radio", "url": "https://stream.zeno.fm/xuy98my6fd0uv", "website": "http://axelaime432hzradio.synergize.co", "logo": "https://logo.clearbit.com/axelaime432hzradio.synergize.co"}, {"name": "47FM", "url": "https://47fm.ice.infomaniak.ch/47fm-agen.mp3", "website": "http://www.47FM.net", "logo": "https://logo.clearbit.com/47FM.net"}, {"name": "47FM 80s", "url": "https://47fm.ice.infomaniak.ch/47fm-80.aac", "website": "http://www.47FM.net", "logo": "https://logo.clearbit.com/47FM.net"}, {"name": "666", "url": "http://radio666.net:8000", "website": "http://www.radio666.com", "logo": "https://logo.clearbit.com/radio666.com"}, {"name": "ABF (Alternative Bass Fréquence), anciennement M2 Radio", "url": "https://abf.net-radio.fr/abf.mp3", "website": "https://www.m2radio.fr/", "logo": "https://logo.clearbit.com/m2radio.fr"}, {"name": "ABF Cult", "url": "https://abf.net-radio.fr/abfcult.mp3", "website": "https://www.m2radio.fr/", "logo": "https://logo.clearbit.com/m2radio.fr"}, {"name": "ABF Gold", "url": "https://abf.net-radio.fr/abfgold.mp3", "website": "https://www.m2radio.fr/", "logo": "https://logo.clearbit.com/m2radio.fr"}, {"name": "ABF Love", "url": "https://abf.net-radio.fr/abflove.mp3", "website": "https://www.m2radio.fr/", "logo": "https://logo.clearbit.com/m2radio.fr"}, {"name": "ABF World", "url": "https://abf.net-radio.fr/abfworld.mp3", "website": "https://www.m2radio.fr/", "logo": "https://logo.clearbit.com/m2radio.fr"}, {"name": "ACX Vallée de la Dordogne", "url": "http://radio10.pro-fhi.net/live/ACX", "website": "https://www.acx-19.fr/", "logo": "https://logo.clearbit.com/acx-19.fr"}, {"name": "Addict Alternative", "url": "http://stream1.addictradio.net/addictalternative.mp3", "website": "https://www.addictradio.net/", "logo": "https://logo.clearbit.com/addictradio.net"}, {"name": "Addict Lounge", "url": "http://stream1.addictradio.net/addictlounge.mp3", "website": "https://www.addictradio.net/", "logo": "https://logo.clearbit.com/addictradio.net"}, {"name": "Addict Rock", "url": "http://stream1.addictradio.net/addictrock.mp3", "website": "https://www.addictradio.net/", "logo": "https://logo.clearbit.com/addictradio.net"}, {"name": "Addict Star", "url": "http://stream1.addictradio.net/addictstar.mp3", "website": "https://www.addictradio.net/", "logo": "https://logo.clearbit.com/addictradio.net"}, {"name": "Ado FM", "url": "http://start-adofm.ice.infomaniak.ch/start-adofm-high.mp3", "website": "http://www.adofm.fr/", "logo": "https://logo.clearbit.com/adofm.fr"}, {"name": "Afdsradio", "url": "https://cheetah.streemlion.com:3565/stream", "website": "http://www.afdsradio.online", "logo": "https://logo.clearbit.com/afdsradio.online"}, {"name": "Africa n°1", "url": "https://african1paris.ice.infomaniak.ch/african1paris-128.mp3", "website": "https://www.africa1.com", "logo": "https://logo.clearbit.com/africa1.com"}, {"name": "Agora Côte d'Azur", "url": "http://agoracotedazur.ice.infomaniak.ch/agoracotedazur.mp3", "website": "https://www.agoracotedazur.fr/", "logo": "https://logo.clearbit.com/agoracotedazur.fr"}, {"name": "Air Connect", "url": "http://stream.airconnectradio.com/ac192.mp3", "website": "https://airconnectradio.com/", "logo": "https://logo.clearbit.com/airconnectradio.com"}, {"name": "AirZen Radio", "url": "https://streams.airzen.fr", "website": "https://www.airzen.fr/", "logo": "https://logo.clearbit.com/airzen.fr"}, {"name": "Aleo", "url": "http://vt-net.org:8056/;", "website": "http://www.radioaleo.org/", "logo": "https://logo.clearbit.com/radioaleo.org"}, {"name": "Aligre FM", "url": "http://stream3.vestaradio.com/aligrefmradio", "website": "https://aligrefm.org/", "logo": "https://logo.clearbit.com/aligrefm.org"}, {"name": "Alouette", "url": "http://alouette.ice.infomaniak.ch/alouette-high.mp3", "website": "https://www.alouette.fr/", "logo": "https://logo.clearbit.com/alouette.fr"}, {"name": "Alpes 1 Gap", "url": "http://alpes1gap.ice.infomaniak.ch/alpes1gap-high.mp3", "website": "https://alpesdusud.alpes1.com/", "logo": "https://logo.clearbit.com/alpesdusud.alpes1.com"}, {"name": "Alpes 1 Grenoble", "url": "http://alpes1grenoble.ice.infomaniak.ch/alpes1grenoble-high.mp3", "website": "http://www.alpes1.com/", "logo": "https://logo.clearbit.com/alpes1.com"}, {"name": "Alta Canzona Corsa", "url": "http://altacanzonacorsa.ice.infomaniak.ch/altacanzonacorsa-128.mp3", "website": "https://www.alta-frequenza.corsica/", "logo": "https://logo.clearbit.com/alta-frequenza.corsica"}, {"name": "Alta Frequenza", "url": "http://altafrequenza.ice.infomaniak.ch/altafrequenza-128.mp3", "website": "https://www.alta-frequenza.corsica/", "logo": "https://logo.clearbit.com/alta-frequenza.corsica"}, {"name": "AlterNantes FM", "url": "http://diffusion.lafrap.fr/alternantes.ogg", "website": "http://www.alternantesfm.net/", "logo": "https://logo.clearbit.com/alternantesfm.net"}, {"name": "Arvorig FM", "url": "http://arvorig-fm.online.radiobreizh.bzh/live.mp3", "website": "https://www.arvorigfm.com/", "logo": "https://logo.clearbit.com/arvorigfm.com"}, {"name": "Axel Aime 432Hz Radio", "url": "https://streamingv2.shoutcast.com/AxelAime432Hz", "website": "http://axelaime432hzradio.66ghz.com", "logo": "https://logo.clearbit.com/axelaime432hzradio.66ghz.com"}, {"name": "AYP FM", "url": "https://stric6.streamakaci.com/radioayp.mp3", "website": "http://radio-aypfm.com/", "logo": "https://logo.clearbit.com/radio-aypfm.com"}, {"name": "AZUR FM 67 - Sélestat", "url": "http://listen.radioking.com/radio/74173/stream/112156", "website": "http://www.azur-fm.com/", "logo": "https://logo.clearbit.com/azur-fm.com"}, {"name": "AZUR FM 68 - Colmar", "url": "http://listen.radioking.com/radio/74176/stream/112165", "website": "http://www.azur-fm.com/", "logo": "https://logo.clearbit.com/azur-fm.com"}, {"name": "Balises (radio Balises- radio associative de Lorient)", "url": "https://radios.infini.fr:8443/radiobalises", "website": "https://radiobalises.com/", "logo": "https://logo.clearbit.com/radiobalises.com"}, {"name": "Banquise FM", "url": "http://94.23.21.126:10050/stream/1/", "website": "http://http://www.banquisefm.com/", "logo": "https://logo.clearbit.com/http:"}, {"name": "Bayou Blue Radio", "url": "http://bayoublueradio.com:8000/live", "website": "https://bayoublueradio.com/", "logo": "https://logo.clearbit.com/bayoublueradio.com"}, {"name": "Beur FM", "url": "http://broadcast.infomaniak.ch/beurfm-high.mp3", "website": "https://www.beurfm.net/", "logo": "https://logo.clearbit.com/beurfm.net"}, {"name": "BFM Business", "url": "http://audio.bfmtv.com/bfmbusiness_128.mp3?aw_0_1st.playerId=BFMBusiness_audio_web&aggregator=BFMBusiness_audio_web", "website": "https://www.bfmtv.com/economie/", "logo": "https://logo.clearbit.com/bfmtv.com"}, {"name": "BFM Radio", "url": "http://audio.bfmtv.com/bfmradio_128.mp3?aw_0_1st.playerId=BFMRadio_audio_web&aggregator=BFMRadio_audio_web", "website": "https://www.bfmtv.com/", "logo": "https://logo.clearbit.com/bfmtv.com"}, {"name": "Bide et Musique", "url": "http://relay1.bide-et-musique.com:9100", "website": "https://www.bide-et-musique.com/", "logo": "https://logo.clearbit.com/bide-et-musique.com"}, {"name": "Booster FM", "url": "http://giss.tv:8000/booster-tlse.mp3", "website": "https://boosterfm.wordpress.com/", "logo": "https://logo.clearbit.com/boosterfm.wordpress.com"}, {"name": "Bulle FM", "url": "http://srv1.coollabel-productions.com:8024", "website": "https://www.bullefm.fr/", "logo": "https://logo.clearbit.com/bullefm.fr"}, {"name": "C Lab", "url": "http://stream.c-lab.fr:8001/c-lab", "website": "http://www.c-lab.fr", "logo": "https://logo.clearbit.com/c-lab.fr"}, {"name": "C9 Radio", "url": "http://stream.c9.fr/c9.mp3", "website": "https://www.c9.fr/", "logo": "https://logo.clearbit.com/c9.fr"}, {"name": "Canal Sud", "url": "http://91.224.148.160:8000/canalsud-live", "website": "https://www.canalsud.net/", "logo": "https://logo.clearbit.com/canalsud.net"}, {"name": "CanalB (Radio associative à Rennes faisant partie de la [[http://ferarock.org/", "url": "http://www.canalb.fr/index.php", "website": "", "logo": null}, {"name": "Cannes Radio", "url": "https://cannesradio.ice.infomaniak.ch/cannesradio-128.mp3", "website": "https://www.cannesradio.com/", "logo": "https://logo.clearbit.com/cannesradio.com"}, {"name": "Cause Commune (pro libre)", "url": "https://stream.causecommune.fm/voixdulat_ogg", "website": "https://cause-commune.fm/", "logo": "https://logo.clearbit.com/cause-commune.fm"}, {"name": "Cerise FM", "url": "https://cerisefm.ice.infomaniak.ch/cerisefm-128.mp3", "website": "https://www.cerisefm.fr/", "logo": "https://logo.clearbit.com/cerisefm.fr"}, {"name": "Chante France", "url": "https://chantefrance.ice.infomaniak.ch/chantefrance-128.mp3", "website": "https://www.chantefrance.com/", "logo": "https://logo.clearbit.com/chantefrance.com"}, {"name": "Chérie FM", "url": "https://streaming.nrjaudio.fm/ouuku85n3nje?origine=ubuntu-fr.org", "website": "https://www.cheriefm.fr/", "logo": "https://logo.clearbit.com/cheriefm.fr"}, {"name": "Cigale FM Champagne", "url": "http://94.23.27.6:8292", "website": "http://www.cigalefmchampagne.org/", "logo": "https://logo.clearbit.com/cigalefmchampagne.org"}, {"name": "Clin d'oeil FM", "url": "http://clindoeilfm1061.ice.infomaniak.ch/clindoeilfm1061-128.mp3", "website": "http://almaclindoeilfm.org/", "logo": "https://logo.clearbit.com/almaclindoeilfm.org"}, {"name": "Collines", "url": "http://collineslaradio.ice.infomaniak.ch/collineslaradio-128.mp3", "website": "https://www.collines-laradio.fr/", "logo": "https://logo.clearbit.com/collines-laradio.fr"}, {"name": "Comala radio", "url": "http://stream.dar.fm/157911", "website": "https://www.comalaradio.com/", "logo": "https://logo.clearbit.com/comalaradio.com"}, {"name": "Comète FM", "url": "http://str0.creacast.com/cometefm", "website": "https://www.cometefm.com/", "logo": "https://logo.clearbit.com/cometefm.com"}, {"name": "Contact", "url": "http://radio-contact.ice.infomaniak.ch/radio-contact-high.mp3", "website": "https://www.mycontact.fr/", "logo": "https://logo.clearbit.com/mycontact.fr"}, {"name": "Couleur3.fr", "url": "http://stream.srg-ssr.ch/m/couleur3/mp3_128", "website": "http://www.couleur3.fr/", "logo": "https://logo.clearbit.com/couleur3.fr"}, {"name": "Cristal FM", "url": "http://radiocristal.ice.infomaniak.ch/radiocristal-high.mp3", "website": "http://www.maradiocristal.com/", "logo": "https://logo.clearbit.com/maradiocristal.com"}, {"name": "Crooner Radio", "url": "http://stream.crooner.fr/crooner", "website": "http://www.crooner.fr/", "logo": "https://logo.clearbit.com/crooner.fr"}, {"name": "Crooner radio", "url": "https://direct.croonerradio.fr/croonerradio-hifi.mp3", "website": "https://www.croonerradio.fr/", "logo": "https://logo.clearbit.com/croonerradio.fr"}, {"name": "CubeRadio", "url": "https://api.cuberadio.fr/play", "website": "https://www.cuberadio.fr/", "logo": "https://logo.clearbit.com/cuberadio.fr"}, {"name": "Demoiselle FM", "url": "http://stream.demoisellefm.com:8000/rochefort-192.mp3", "website": "https://www.demoisellefm.com/", "logo": "https://logo.clearbit.com/demoisellefm.com"}, {"name": "Divergence Fm", "url": "http://ridibundus.divergence-fm.org:8000/divergence.ogg", "website": "http://divergence-fm.org", "logo": "https://logo.clearbit.com/divergence-fm.org"}, {"name": "Djamradio", "url": "http://ledjamradio.ice.infomaniak.ch/ledjamradio.mp3", "website": "https://www.djamradio.com/", "logo": "https://logo.clearbit.com/djamradio.com"}, {"name": "Dogmazic/Radio Libre", "url": "http://radio.dogmazic.net:8000/stream.mp3", "website": "http://www.dogmazic.net/", "logo": "https://logo.clearbit.com/dogmazic.net"}, {"name": "Dreyeckland", "url": "http://radiodreyeckland.ice.infomaniak.ch/radiodreyeckland-128.mp3", "website": "http://www.radiodreyeckland.com/", "logo": "https://logo.clearbit.com/radiodreyeckland.com"}, {"name": "EnjoyStation", "url": "http://diffusion.enjoystation.fr/listen/enjoy_station/radio.mp3", "website": "http://www.enjoystation.fr/", "logo": "https://logo.clearbit.com/enjoystation.fr"}, {"name": "Espace FM", "url": "http://listen.radioking.com/radio/16769/stream/49487", "website": "http://www.espacefm.com/", "logo": "https://logo.clearbit.com/espacefm.com"}, {"name": "Euradio", "url": "https://diffusion.lafrap.fr/euradio.mp3", "website": "https://euradio.fr/", "logo": "https://logo.clearbit.com/euradio.fr"}, {"name": "Europe 1", "url": "http://europe1.lmn.fm/europe1.mp3?aw_0_1st.playerid=lagardereWebE1", "website": "http://www.europe1.fr/", "logo": "https://logo.clearbit.com/europe1.fr"}, {"name": "Europe 2", "url": "https://europe2.lmn.fm/europe2.mp3?aw_0_1st.playerid=lgrdnwsRadioplayer", "website": "https://www.europe2.fr/", "logo": "https://logo.clearbit.com/europe2.fr"}, {"name": "Evasion FM", "url": "http://stream1.evasionfm.com/Yvelines", "website": "http://www.evasionfm.com/", "logo": "https://logo.clearbit.com/evasionfm.com"}, {"name": "FG (FM)", "url": "http://radiofg.impek.com/fg", "website": "http://www.radiofg.com/", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Chic", "url": "http://radiofg.impek.com:80/fgc", "website": "http://www.radiofg.com/live-fg-chic-12", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Club", "url": "http://radiofg.impek.com/fg6", "website": "http://www.radiofg.com/live-fg-club-17", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Dance by Hakimakli", "url": "http://radiofg.impek.com/fgd", "website": "http://www.radiofg.com/live-fg-deep-dance-11", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Non Stop", "url": "http://radiofg.impek.com/fge", "website": "http://www.radiofg.com/live-fg-international-16", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Starter", "url": "http://radiofg.impek.com:80/fgv", "website": "http://www.radiofg.com/live-fg-gay-party-14", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Underground", "url": "http://radiofg.impek.com/ufg", "website": "http://www.radiofg.com/live-fg-underground-13", "logo": "https://logo.clearbit.com/radiofg.com"}, {"name": "FG Vlaanderen Belgium", "url": "http://radiofg.impek.com/fga", "website": "https://radiofg.be/", "logo": "https://logo.clearbit.com/radiofg.be"}, {"name": "FIP", "url": "http://icecast.radiofrance.fr/fip-hifi.aac", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Electro", "url": "http://direct.fipradio.fr/live/fip-webradio8.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Groove", "url": "http://direct.fipradio.fr/live/fip-webradio3mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Hip-Hop", "url": "http://icecast.radiofrance.fr/fiphiphop-hifi.aac", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Jazz", "url": "http://direct.fipradio.fr/live/fip-webradio2.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Metal", "url": "http://icecast.radiofrance.fr/fipmetal-hifi.aac", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Monde", "url": "http://direct.fipradio.fr/live/fip-webradio4.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Nouveautés", "url": "http://direct.fipradio.fr/live/fip-webradio5.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Pop", "url": "http://direct.fipradio.fr/live/fip-webradio7.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Reggae", "url": "http://direct.fipradio.fr/live/fip-webradio6.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "FIP Rock", "url": "http://direct.fipradio.fr/live/fip-webradio1.mp3", "website": "http://www.fipradio.fr/", "logo": "https://logo.clearbit.com/fipradio.fr"}, {"name": "Flash FM", "url": "https://flashfm2.ice.infomaniak.ch/flashfm2-128.mp3", "website": "https://www.flashfm.fr/", "logo": "https://logo.clearbit.com/flashfm.fr"}, {"name": "Flor FM", "url": "http://stream.florfm.com:8000/florfm.mp3", "website": "https://www.florfm.com/", "logo": "https://logo.clearbit.com/florfm.com"}, {"name": "FM 81", "url": "http://fm81.ice.infomaniak.ch/fm81-128.mp3", "website": "https://www.fm81.fr/", "logo": "https://logo.clearbit.com/fm81.fr"}, {"name": "Fox Radio", "url": "http://163.172.90.98:8000/livefox", "website": "http://foxradio.fr/", "logo": "https://logo.clearbit.com/foxradio.fr"}, {"name": "France Bleu Alsace", "url": "http://direct.francebleu.fr/live/fbalsace-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Armorique", "url": "http://direct.francebleu.fr/live/fbarmorique-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Auxerre", "url": "http://direct.francebleu.fr/live/fbauxerre-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Azur", "url": "http://direct.francebleu.fr/live/fbazur-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Belfort-Montbéliard", "url": "http://direct.francebleu.fr/live/fbbelfort-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Berry", "url": "http://direct.francebleu.fr/live/fbberry-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Besançon", "url": "http://direct.francebleu.fr/live/fbbesancon-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Bourgogne", "url": "http://direct.francebleu.fr/live/fbbourgogne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Breizh Izel", "url": "http://direct.francebleu.fr/live/fbbreizizel-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Béarn", "url": "http://direct.francebleu.fr/live/fbbearn-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Champagne-Ardenne", "url": "http://direct.francebleu.fr/live/fbchampagne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Cotentin", "url": "http://direct.francebleu.fr/live/fbcotentin-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Creuse", "url": "http://direct.francebleu.fr/live/fbcreuse-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Drome Ardèche", "url": "http://direct.francebleu.fr/live/fbdromeardeche-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Elsass", "url": "http://direct.francebleu.fr/live/Fbelsass-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Gard Lozère", "url": "http://direct.francebleu.fr/live/fbgardlozere-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Gascogne", "url": "http://direct.francebleu.fr/live/fbgascogne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Gironde", "url": "http://direct.francebleu.fr/live/fbgironde-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Hérault", "url": "http://direct.francebleu.fr/live/fbherault-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Isère", "url": "http://direct.francebleu.fr/live/fbisere-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu La Rochelle", "url": "http://direct.francebleu.fr/live/fblarochelle-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Limousin", "url": "http://direct.francebleu.fr/live/fblimousin-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Loire Océan", "url": "http://direct.francebleu.fr/live/fbloireocean-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Lorraine Nord", "url": "http://direct.francebleu.fr/live/fblorrainenord-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Maine", "url": "http://direct.francebleu.fr/live/fbmaine-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Mayenne", "url": "http://direct.francebleu.fr/live/fbmayenne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Nord", "url": "http://direct.francebleu.fr/live/fbnord-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Normandie (Calvados - Orne)", "url": "http://direct.francebleu.fr/live/fbbassenormandie-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Normandie (Seine-Maritime - Eure)", "url": "http://direct.francebleu.fr/live/fbhautenormandie-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Orléans", "url": "http://direct.francebleu.fr/live/fborleans-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Paris", "url": "http://direct.francebleu.fr/live/fb1071-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Pays Basque", "url": "http://direct.francebleu.fr/live/fbpaysbasque-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Pays d'Auvergne", "url": "http://direct.francebleu.fr/live/fbpaysdauvergne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Pays de Savoie", "url": "http://direct.francebleu.fr/live/fbpaysdesavoie-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Picardie", "url": "http://direct.francebleu.fr/live/fbpicardie-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Poitou", "url": "http://direct.francebleu.fr/live/fbpoitou-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Provence", "url": "http://direct.francebleu.fr/live/fbprovence-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Périgord", "url": "http://direct.francebleu.fr/live/fbperigord-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu RCFM Frequenza Mora", "url": "http://direct.francebleu.fr/live/fbfrequenzamora-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Roussillon", "url": "http://direct.francebleu.fr/live/fbroussillon-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Saint-Etienne Loire", "url": "http://direct.francebleu.fr/live/fbstetienne-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Sud Lorraine", "url": "http://direct.francebleu.fr/live/fbsudlorraine-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Toulouse", "url": "http://direct.francebleu.fr/live/fbtoulouse-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Touraine", "url": "http://direct.francebleu.fr/live/fbtouraine-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Bleu Vaucluse", "url": "http://direct.francebleu.fr/live/fbvaucluse-midfi.mp3", "website": "https://www.francebleu.fr/", "logo": "https://logo.clearbit.com/francebleu.fr"}, {"name": "France Culture", "url": "http://direct.franceculture.fr/live/franceculture-midfi.mp3", "website": "http://www.franceculture.fr/", "logo": "https://logo.clearbit.com/franceculture.fr"}, {"name": "France Info", "url": "http://direct.franceinfo.fr/live/franceinfo-midfi.mp3", "website": "http://www.francetvinfo.fr/", "logo": "https://logo.clearbit.com/francetvinfo.fr"}, {"name": "France Inter", "url": "http://icecast.radiofrance.fr/franceinter-midfi.mp3", "website": "http://www.franceinter.fr/", "logo": "https://logo.clearbit.com/franceinter.fr"}, {"name": "France Maghreb 2", "url": "https://francemaghreb2.ice.infomaniak.ch/francemaghreb2-high.mp3", "website": "https://www.francemaghreb2.fr/", "logo": "https://logo.clearbit.com/francemaghreb2.fr"}, {"name": "France Musique", "url": "http://direct.francemusique.fr/live/francemusique-midfi.mp3", "website": "http://www.francemusique.fr/", "logo": "https://logo.clearbit.com/francemusique.fr"}, {"name": "France Musique Classique Easy", "url": "http://icecast.radiofrance.fr/francemusiqueeasyclassique-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique Classique Plus", "url": "http://icecast.radiofrance.fr/francemusiqueclassiqueplus-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique Concerts Radio France", "url": "http://icecast.radiofrance.fr/francemusiqueconcertsradiofrance-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique La B.O. Musiques de films", "url": "http://icecast.radiofrance.fr/francemusiquelabo-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique La Baroque", "url": "http://icecast.radiofrance.fr/francemusiquebaroque-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique La Contemporaine", "url": "http://icecast.radiofrance.fr/francemusiquelacontemporaine-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique La Jazz", "url": "http://icecast.radiofrance.fr/francemusiquelajazz-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique Ocora Musiques du monde", "url": "http://icecast.radiofrance.fr/francemusiqueocoramonde-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "France Musique Opéra", "url": "http://icecast.radiofrance.fr/francemusiqueopera-hifi.aac", "website": "https://www.radiofrance.fr/francemusique", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "French Kiss FM", "url": "http://178.63.62.145/;stream.mp3", "website": "http://frenchkissfm.com/", "logo": "https://logo.clearbit.com/frenchkissfm.com"}, {"name": "Frequence Luz", "url": "http://stream.radios-arra.fr:8000/frequenceluz", "website": "http://www.frequenceluz.com/", "logo": "https://logo.clearbit.com/frequenceluz.com"}, {"name": "Frequence Plus", "url": "http://freqplus.ice.infomaniak.ch/freqplus-high.mp3", "website": "https://www.frequenceplusfm.com/", "logo": "https://logo.clearbit.com/frequenceplusfm.com"}, {"name": "Frequence Terre", "url": "http://frequenceterre.freeboxos.fr:443/frequenceterre", "website": "https://www.frequenceterre.com/", "logo": "https://logo.clearbit.com/frequenceterre.com"}, {"name": "Frequence3", "url": "http://hd.stream.frequence3.net/frequence3-128.mp3", "website": "https://www.frequence3.com/", "logo": "https://logo.clearbit.com/frequence3.com"}, {"name": "Fréquence Jazz", "url": "http://broadcast.infomaniak.ch/frequencejazz-high.mp3", "website": "http://www.frequencejazz.com/", "logo": "https://logo.clearbit.com/frequencejazz.com"}, {"name": "Fréquence K", "url": "http://frequencek.ice.infomaniak.ch/frequencek-128.mp3", "website": "http://www.frequencek.net/", "logo": "https://logo.clearbit.com/frequencek.net"}, {"name": "Fréquence Paris Plurielle", "url": "https://direct.rfpp.net/fpp.mp3", "website": "http://www.rfpp.net/", "logo": "https://logo.clearbit.com/rfpp.net"}, {"name": "Fugi FM", "url": "http://92.175.228.15:8000/stream.mp3", "website": "http://www.fugifm.fr/", "logo": "https://logo.clearbit.com/fugifm.fr"}, {"name": "Fun Radio France", "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4", "website": "https://www.funradio.fr/", "logo": "https://logo.clearbit.com/funradio.fr"}, {"name": "Fuzzy & Groovy Rock Radio", "url": "http://listen.radionomy.com/fuzzy-and-groovy.m3u", "website": "http://fuzzy-groovy-radio.tk/", "logo": "https://logo.clearbit.com/fuzzy-groovy-radio.tk"}, {"name": "Galaxie FM 95.30", "url": "https://listen.radioking.com/radio/15684/stream/29075", "website": "http://www.galaxiefm.com/", "logo": "https://logo.clearbit.com/galaxiefm.com"}, {"name": "Gascogne FM", "url": "http://stream.radios-arra.fr:8000/gascognefm", "website": "http://www.gascognefm.com/", "logo": "https://logo.clearbit.com/gascognefm.com"}, {"name": "GENERATION SOUL DISCO FUNK RADIO", "url": "http://www.generationdiscofunk.com/pls/hd.m3u", "website": "http://www.generationdiscofunk.com", "logo": "https://logo.clearbit.com/generationdiscofunk.com"}, {"name": "Generations FM", "url": "http://generationfm.ice.infomaniak.ch/generationfm-high.mp3", "website": "http://www.generationsfm.com/", "logo": "https://logo.clearbit.com/generationsfm.com"}, {"name": "GOLD FM", "url": "http://http://mmradios.ice.infomaniak.ch/goldfm.mp3", "website": "http://www.goldfm.fr", "logo": "https://logo.clearbit.com/goldfm.fr"}, {"name": "Graffiti Urban-Radio  88.6 FM La Roche sur Yon", "url": "https://diffusion.lafrap.fr/graffiti.mp3", "website": "http://www.urban-radio.com/", "logo": "https://logo.clearbit.com/urban-radio.com"}, {"name": "Grand Lille Info", "url": "https://str0.creacast.com/grandlilleinfos", "website": "https://www.grandlille.tv/radio-grandlille-info/", "logo": "https://logo.clearbit.com/grandlille.tv"}, {"name": "Grimaldi FM", "url": "http://91.121.29.128:8058/stream", "website": "http://www.grimaldifm.net/", "logo": "https://logo.clearbit.com/grimaldifm.net"}, {"name": "Guadeloupe 1ère", "url": "http://radios.la1ere.fr/guadeloupe", "website": "http://guadeloupe.la1ere.fr/", "logo": "https://logo.clearbit.com/guadeloupe.la1ere.fr"}, {"name": "Guyane 1ère", "url": "http://radios.la1ere.fr/guyane", "website": "http://guyane.la1ere.fr/", "logo": "https://logo.clearbit.com/guyane.la1ere.fr"}, {"name": "HAG FM", "url": "http://213.246.51.78:9290/;", "website": "http://www.hagfm.fr/", "logo": "https://logo.clearbit.com/hagfm.fr"}, {"name": "Happy FM", "url": "http://happyfm.ice.infomaniak.ch/happyfm-128.mp3", "website": "http://www.happyfm.com/", "logo": "https://logo.clearbit.com/happyfm.com"}, {"name": "Hit West", "url": "http://broadcast.infomaniak.ch/hitwest-high.mp3", "website": "http://www.hitwest.com/", "logo": "https://logo.clearbit.com/hitwest.com"}, {"name": "Hits1 latina", "url": "http://91.121.86.78:8012/;stream.mp3", "website": "https://www.hits1radio.com/radiochannel/hits1-latina//", "logo": "https://logo.clearbit.com/hits1radio.com"}, {"name": "Hits1 radio", "url": "https://www.radioking.com/play/grandsud/223459", "website": "https://www.hits1radio.com/", "logo": "https://logo.clearbit.com/hits1radio.com"}, {"name": "Horizon Radio", "url": "https://horizonradio-bethunelens.ice.infomaniak.ch/horizonradio-bethunelens-128", "website": "https://www.horizonradio.fr/", "logo": "https://logo.clearbit.com/horizonradio.fr"}, {"name": "Hotmix Radio", "url": "https://streaming.hotmixradio.fr/hotmix-hits-fr-mp3", "website": "http://www.hotmixradio.fr/", "logo": "https://logo.clearbit.com/hotmixradio.fr"}, {"name": "Hotmix Radio 80's", "url": "https://streaming.hotmixradio.com/hotmix-80-en-mp3", "website": "http://www.hotmixradio.fr/", "logo": "https://logo.clearbit.com/hotmixradio.fr"}, {"name": "Hotmix Radio 90's", "url": "http://streamingads.hotmixradio.fm/hotmixradio-90-128.mp3", "website": "http://www.hotmixradio.fr/", "logo": "https://logo.clearbit.com/hotmixradio.fr"}, {"name": "Hotmix Radio Funky", "url": "http://streaming.hotmixradio.fm/hotmixradio-funky-128.mp3", "website": "http://www.hotmixradio.fr/", "logo": "https://logo.clearbit.com/hotmixradio.fr"}, {"name": "idFM Radio Enghien", "url": "http://live.idfm98.fr:8000/idfm.m3u", "website": "http://www.idfm98.fr/", "logo": "https://logo.clearbit.com/idfm98.fr"}, {"name": "Intensité", "url": "http://intensite.net:9010/", "website": "http://intensite.net", "logo": "https://logo.clearbit.com/intensite.net"}, {"name": "Jazz Radio", "url": "http://jazzradio.ice.infomaniak.ch/jazzradio-high.mp3", "website": "http://www.jazzradio.fr/", "logo": "https://logo.clearbit.com/jazzradio.fr"}, {"name": "JetFm (Nantes)", "url": "https://diffusion.lafrap.fr/jetfm.mp3", "website": "http://www.jetfm.asso.fr/site/", "logo": "https://logo.clearbit.com/jetfm.asso.fr"}, {"name": "K-POP", "url": "https://mmradios.ice.infomaniak.ch/kpopstyle.mp3", "website": "http://www.toulousefm.fm/", "logo": "https://logo.clearbit.com/toulousefm.fm"}, {"name": "K6 FM", "url": "http://k6fm.ice.infomaniak.ch/k6fm-64.aac", "website": "http://www.k6fm.com/", "logo": "https://logo.clearbit.com/k6fm.com"}, {"name": "Kiss FM", "url": "http://kissfm2.ice.infomaniak.ch/kissfm2-128.mp3", "website": "http://www.kissfm.fr/", "logo": "https://logo.clearbit.com/kissfm.fr"}, {"name": "kisswestcoast", "url": "http://kisswestcoast.ice.infomaniak.ch/kisswestcoast-64.aac", "website": "http://www.kisswestcoast.com/", "logo": "https://logo.clearbit.com/kisswestcoast.com"}, {"name": "L'Eko des Garrigues (Radio associative à Montpellier faisant partie de la [[http://ferarock.org/", "url": "http://www.ekodesgarrigues.com", "website": "", "logo": null}, {"name": "La 1ère", "url": "http://outremer.ice.infomaniak.ch/outremer-128.mp3", "website": "http://la1ere.francetvinfo.fr/radio", "logo": "https://logo.clearbit.com/la1ere.francetvinfo.fr"}, {"name": "La Clé des Ondes", "url": "https://stream.lacledesondes.fr/direct.m3u", "website": "http://www.lacdo.org", "logo": "https://logo.clearbit.com/lacdo.org"}, {"name": "La Grosse Radio Metal", "url": "https://hd.lagrosseradio.info/lagrosseradio-metal-192.mp3", "website": "https://www.lagrosseradio.com/", "logo": "https://logo.clearbit.com/lagrosseradio.com"}, {"name": "La Grosse Radio Reggae", "url": "https://hd.lagrosseradio.info/lagrosseradio-reggae-192.mp3", "website": "https://www.lagrosseradio.com/", "logo": "https://logo.clearbit.com/lagrosseradio.com"}, {"name": "La Grosse Radio Rock", "url": "https://hd.lagrosseradio.info/lagrosseradio-rock-192.mp3", "website": "https://www.lagrosseradio.com/", "logo": "https://logo.clearbit.com/lagrosseradio.com"}, {"name": "LarG'", "url": "https://stream.larg.fr/larg.mp3", "website": "https://www.larg.fr/", "logo": "https://logo.clearbit.com/larg.fr"}, {"name": "Latina", "url": "http://broadcast.infomaniak.net/start-latina-high.mp3", "website": "http://www.latina.fr/", "logo": "https://logo.clearbit.com/latina.fr"}, {"name": "Le Figaro Radio", "url": "https://stream.rcs.revma.com/hbm385tup42vv", "website": "https://www.lefigaro.fr/dossier/radio-et-podcasts", "logo": "https://logo.clearbit.com/lefigaro.fr"}, {"name": "Le Mellotron", "url": "https://listen.radioking.com/radio/477719/stream/534044", "website": "https://www.lemellotron.com/", "logo": "https://logo.clearbit.com/lemellotron.com"}, {"name": "Let's Go Zik", "url": "http://stream.letsgozik.com:8000/letsgozik", "website": "http://www.letsgozik.com/", "logo": "https://logo.clearbit.com/letsgozik.com"}, {"name": "Lor'FM", "url": "http://lorfm.ice.infomaniak.ch/lorfm-128.mp3", "website": "http://www.lorfm.com/", "logo": "https://logo.clearbit.com/lorfm.com"}, {"name": "LYL Radio", "url": "https://icecast.lyl.live/live", "website": "https://lyl.live/", "logo": "https://logo.clearbit.com/lyl.live"}, {"name": "M40", "url": "https://s1.mcast.digital/listen/m40/m40radio-128.mp3", "website": "https://m40radio.fr", "logo": "https://logo.clearbit.com/m40radio.fr"}, {"name": "Magnum La Radio", "url": "http://str0.creacast.com/magnum", "website": "https://www.magnumlaradio.com/", "logo": "https://logo.clearbit.com/magnumlaradio.com"}, {"name": "Martinique 1ère", "url": "http://radios.la1ere.fr/martinique", "website": "http://martinique.la1ere.fr/", "logo": "https://logo.clearbit.com/martinique.la1ere.fr"}, {"name": "Maxi France", "url": "https://stream.maxifrance.radio/stream", "website": "http://www.maxifrance.radio", "logo": "https://logo.clearbit.com/maxifrance.radio"}, {"name": "Maxximum", "url": "https://n10a-eu.rcs.revma.com/nwhyn2c6p98uv?rj-ttl=5&rj-tok=AAABhe_c2RAANpLzDjd17M9EbA", "website": "https://maxximum.fr/", "logo": "https://logo.clearbit.com/maxximum.fr"}, {"name": "Maxximum 90's", "url": "https://radiofg.impek.com/max2.mp3", "website": "https://maxximum.fr/", "logo": "https://logo.clearbit.com/maxximum.fr"}, {"name": "Mayotte 1ère", "url": "http://radios.la1ere.fr/mayotte", "website": "http://mayotte.la1ere.fr/", "logo": "https://logo.clearbit.com/mayotte.la1ere.fr"}, {"name": "MBS Classic Gold", "url": "http://stream1.evasionfm.com/mbs", "website": "http://goblogradio.over-blog.com/2017/01/mbs-classic-gold-nouvelle-radio-oldies-en-ile-de-france.html", "logo": "https://logo.clearbit.com/goblogradio.over-blog.com"}, {"name": "Mediterraneo Smooth Jazz", "url": "http://streaming.radionomy.com/Mediterraneo-SMOOTHJAZZ", "website": "http://www.radiomediterraneo.com/", "logo": "https://logo.clearbit.com/radiomediterraneo.com"}, {"name": "Melody", "url": "https://stream.rcs.revma.com/5a05fstup42vv", "website": "https://www.melody.tv/radio/", "logo": "https://logo.clearbit.com/melody.tv"}, {"name": "Melody In Paris", "url": "https://stream.rcs.revma.com/96a3ac2byf9uv", "website": "https://www.melody.tv/radio/", "logo": "https://logo.clearbit.com/melody.tv"}, {"name": "Melody Suisse", "url": "https://stream.rcs.revma.com/bsa1cyuup42vv", "website": "https://www.melody.tv/radio/", "logo": "https://logo.clearbit.com/melody.tv"}, {"name": "MFM", "url": "http://mfm.ice.infomaniak.ch/mfm-128.mp3", "website": "http://www.mfm.fr/", "logo": "https://logo.clearbit.com/mfm.fr"}, {"name": "Mixx Radio", "url": "http://mixxfmfr.ice.infomaniak.ch/mixxfmfr-192.mp3", "website": "http://www.mixxfm.fr", "logo": "https://logo.clearbit.com/mixxfm.fr"}, {"name": "Mona FM", "url": "http://monafm.ice.infomaniak.ch/monafm-high.mp3", "website": "https://www.monafm.fr/", "logo": "https://logo.clearbit.com/monafm.fr"}, {"name": "Monte Carlo Doualiya (Anciennement RMC Moyen Orient)", "url": "http://live02.mc-doualiya.com/mc-doualiya.mp3", "website": "https://www.mc-doualiya.com/", "logo": "https://logo.clearbit.com/mc-doualiya.com"}, {"name": "Morow - Rock Progressif", "url": "http://stream.fr.morow.com:8080/morow_med.mp3", "website": "http://www.morow.com", "logo": "https://logo.clearbit.com/morow.com"}, {"name": "Mouv'", "url": "http://direct.mouv.fr/live/mouv-midfi.mp3", "website": "https://www.mouv.fr/", "logo": "https://logo.clearbit.com/mouv.fr"}, {"name": "Mouv' 100% Mix", "url": "http://icecast.radiofrance.fr/mouv100p100mix-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' Classics", "url": "http://icecast.radiofrance.fr/mouvclassics-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' DanceHall", "url": "http://icecast.radiofrance.fr/mouvdancehall-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' Kids 'n Family", "url": "http://icecast.radiofrance.fr/mouvkidsnfamily-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' Rap Français", "url": "http://icecast.radiofrance.fr/mouvrapfr-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' Rap US", "url": "http://icecast.radiofrance.fr/mouvrapus-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' RnB & Soul", "url": "http://icecast.radiofrance.fr/mouvrnb-hifi.aac", "website": "https://www.radiofrance.fr/mouv", "logo": "https://logo.clearbit.com/radiofrance.fr"}, {"name": "Mouv' Xtra", "url": "http://direct.mouv.fr/live/mouvxtra-midfi.mp3", "website": "http://www.lemouv.fr/", "logo": "https://logo.clearbit.com/lemouv.fr"}, {"name": "Music Radio Ai", "url": "https://radio.musicradio.ai/listen/musicradio.ai/radio.mp3", "website": "https://musicradio.ai", "logo": "https://logo.clearbit.com/musicradio.ai"}, {"name": "Musical Spa Radio", "url": "http://streaming.radionomy.com/MusicalSpaRadio", "website": "http://musicalspa.com/", "logo": "https://logo.clearbit.com/musicalspa.com"}, {"name": "MyZen", "url": "https://stream.rcs.revma.com/gnn6u7czd8uvv", "website": "https://www.myzen.tv/fr/radio/", "logo": "https://logo.clearbit.com/myzen.tv"}, {"name": "N RADIO (LA Radio de l'Aisne)", "url": "http://radio.ice.infomaniak.ch/nradio-128.mp3", "website": "https://www.nradio.fr/", "logo": "https://logo.clearbit.com/nradio.fr"}, {"name": "NA Radio", "url": "https://naradio.ice.infomaniak.ch/naradio-192.mp3", "website": "http://www.naradio.fr", "logo": "https://logo.clearbit.com/naradio.fr"}, {"name": "NEO", "url": "http://stream.radioneo.org:8000/;", "website": "http://www.radioneo.org/", "logo": "https://logo.clearbit.com/radioneo.org"}, {"name": "Nice Radio", "url": "https://niceradio.ice.infomaniak.ch/niceradio.mp3", "website": "http://niceradio.fr/", "logo": "https://logo.clearbit.com/niceradio.fr"}, {"name": "NOSTALGIE", "url": "https://streaming.nrjaudio.fm/oug7girb92oc?origine=ubuntu-fr.org", "website": "https://www.nostalgie.fr", "logo": "https://logo.clearbit.com/nostalgie.fr"}, {"name": "Nouvelle Calédonie 1ère", "url": "http://radios.la1ere.fr/nouvellecaledonie", "website": "http://nouvellecaledonie.la1ere.fr/", "logo": "https://logo.clearbit.com/nouvellecaledonie.la1ere.fr"}, {"name": "Nov FM", "url": "https://shoutcast.novfm.org/novfm.mp3", "website": "https://www.novfm.org", "logo": "https://logo.clearbit.com/novfm.org"}, {"name": "NRJ", "url": "https://streaming.nrjaudio.fm/oumvmk8fnozc?origine=ubuntu-fr.org", "website": "https://www.nrj.fr", "logo": "https://logo.clearbit.com/nrj.fr"}, {"name": "O2 Radio (Bordeaux)", "url": "http://91.121.176.26:7900/;", "website": "https://fr.wikipedia.org/wiki/O2_Radio", "logo": "https://logo.clearbit.com/fr.wikipedia.org"}, {"name": "Océane Fm", "url": "http://oceanefm.ice.infomaniak.ch/oceanefm-128.mp3", "website": "http://www.oceanefm.com/", "logo": "https://logo.clearbit.com/oceanefm.com"}, {"name": "OKLM radio", "url": "https://listen.radioking.com/radio/3093/stream/230", "website": "https://oklm.com", "logo": "https://logo.clearbit.com/oklm.com"}, {"name": "Onde courte \"la webradio du libre\" (Toulouse)", "url": "http://stream.ondecourte.fr/radio.ogg", "website": "https://ondecourte.fr/", "logo": "https://logo.clearbit.com/ondecourte.fr"}, {"name": "Ondes Bleues la Radio", "url": "http://ecmanager.pro-fhi.net:1740", "website": "https://www.facebook.com/OndesBleueslaRadio/", "logo": "https://logo.clearbit.com/facebook.com"}, {"name": "OÜI FM", "url": "http://ouifm.ice.infomaniak.ch/ouifm-high.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Alternatif", "url": "http://ouifm2.ice.infomaniak.ch/ouifm2.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Blues'n'Rock", "url": "http://ouifmbluesnrock.ice.infomaniak.ch/ouifmbluesnrock-128.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Classic Rock", "url": "http://ouifm3.ice.infomaniak.ch/ouifm3.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM GarageRock", "url": "https://ouifmgaragerock.ice.infomaniak.ch/ouifmgaragerock-128.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Raggae", "url": "http://ouifmganja.ice.infomaniak.ch/ouifmganja-128.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock 2000", "url": "http://ouifmrock2000.ice.infomaniak.ch/ouifmrock2000.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock 60'", "url": "http://ouifmrock60s.ice.infomaniak.ch/ouifmsixties.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock 70'", "url": "http://seventies.ice.infomaniak.ch/ouifmseventies.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock 80'", "url": "http://eighties.ice.infomaniak.ch/ouifmeighties.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock 90'", "url": "http://nineties.ice.infomaniak.ch/ouifmnineties.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock Français", "url": "http://rockfrancais.ice.infomaniak.ch/ouifmrockfrancais.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock indé", "url": "http://ouifm5.ice.infomaniak.ch/ouifm5.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock Slow", "url": "http://slowrock.ice.infomaniak.ch/ouifmslowrock.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM Rock'n'Food", "url": "http://rocknfood.ice.infomaniak.ch/ouifmrocknfood.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM RockGirls", "url": "http://girlsrock.ice.infomaniak.ch/ouifmgirlsrock.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM SummerTime", "url": "http://summertime.ice.infomaniak.ch/ouifmsummertime.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM TopOfTheWeek", "url": "http://topweek.ice.infomaniak.ch/ouifmtopweek.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM WoodStock", "url": "http://woodstock.ice.infomaniak.ch/ouifmwoodstock.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM XMas Rock", "url": "http://ouifmnoel.ice.infomaniak.ch/ouifmnoel-128.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "OÜI FM XMas Rock", "url": "http://ouifmbringthenoise.ice.infomaniak.ch/ouifmbringthenoise.mp3", "website": "https://www.ouifm.fr/player", "logo": "https://logo.clearbit.com/ouifm.fr"}, {"name": "p Node", "url": "http://stream.p-node.org:80/pnode.mp3", "website": "https://p-node.org/", "logo": "https://logo.clearbit.com/p-node.org"}, {"name": "Pastel FM", "url": "http://87.98.217.57:8049/live", "website": "http://www.pastelfm.com/", "logo": "https://logo.clearbit.com/pastelfm.com"}, {"name": "Planete FM", "url": "http://planetefm.ice.infomaniak.ch/planetefm-128.mp3", "website": "http://www.planetefm.net/", "logo": "https://logo.clearbit.com/planetefm.net"}, {"name": "Playloud", "url": "http://91.121.59.45:8280/stream", "website": "http://www.playloud.fr/", "logo": "https://logo.clearbit.com/playloud.fr"}, {"name": "Plum fm", "url": "http://plumfm.online.radiobreizh.bzh/live.mp3", "website": "http://www.plumfm.net/", "logo": "https://logo.clearbit.com/plumfm.net"}, {"name": "Podradio", "url": "http://radio.podradio.fr:8000/adsl", "website": "http://podradio.fr/", "logo": "https://logo.clearbit.com/podradio.fr"}, {"name": "Polynésie 1ère", "url": "http://radios.la1ere.fr/polynesie", "website": "http://polynesie.la1ere.fr/", "logo": "https://logo.clearbit.com/polynesie.la1ere.fr"}, {"name": "Pophitradio", "url": "http://listen.shoutcast.com/pophitradio", "website": "https://pophitradio.fr/", "logo": "https://logo.clearbit.com/pophitradio.fr"}, {"name": "Prun'92Fm", "url": "https://diffusion.lafrap.fr/streamprun", "website": "http://www.prun.net/", "logo": "https://logo.clearbit.com/prun.net"}, {"name": "Radio 6 Calais", "url": "https://radio6-calais.ice.infomaniak.ch/radio6-calais-128.mp3", "website": "https://www.radio6.fr/", "logo": "https://logo.clearbit.com/radio6.fr"}, {"name": "Radio 8 Ardennes", "url": "https://radio8.ice.infomaniak.ch/radio8-128.mp3", "website": "https://www.radio8fm.com/", "logo": "https://logo.clearbit.com/radio8fm.com"}, {"name": "Radio Accent 4", "url": "http://str0.creacast.com/accent4", "website": "http://blog.accent4.com/", "logo": "https://logo.clearbit.com/blog.accent4.com"}, {"name": "Radio Activ' (Radio associative à St Brieuc qui a rejoint la [[http://ferarock.org/", "url": "http://www.radio-activ.com/", "website": "", "logo": null}, {"name": "Radio Alfa", "url": "http://5.39.87.10:9860/paris", "website": "https://radioalfa.net/", "logo": "https://logo.clearbit.com/radioalfa.net"}, {"name": "Radio Alpes Mancelles (RAM)", "url": "http://stream.t-s-b.fr:8000/ram.mp3", "website": "https://www.radioalpesmancelles.net/", "logo": "https://logo.clearbit.com/radioalpesmancelles.net"}, {"name": "Radio Arc-en-Ciel Strasbourg", "url": "http://str0.creacast.com/arcencielweb", "website": "http://www.radioarcenciel.com/", "logo": "https://logo.clearbit.com/radioarcenciel.com"}, {"name": "Radio Bartas", "url": "https://stream-ssl.radios-arra.fr:8443/radiobartas", "website": "https://www.radiobartas.net/", "logo": "https://logo.clearbit.com/radiobartas.net"}, {"name": "Radio Bassin Arcachon", "url": "http://mmradios.ice.infomaniak.ch/rba.mp3", "website": "http://www.rba.fr/", "logo": "https://logo.clearbit.com/rba.fr"}, {"name": "Radio Bienvenue Strasbourg", "url": "http://listen.radioking.com/radio/178981/stream/220666", "website": "https://www.radiorbs.com/", "logo": "https://logo.clearbit.com/radiorbs.com"}, {"name": "Radio Boomerang", "url": "http://dabboomerang2.dyndns.org:8091/;", "website": "https://www.radioboomerang.com/", "logo": "https://logo.clearbit.com/radioboomerang.com"}, {"name": "Radio Bouton", "url": "https://hosting.studioradiomedia.fr:1245/stream", "website": "https://radio-bouton.org/", "logo": "https://logo.clearbit.com/radio-bouton.org"}, {"name": "Radio Béton (Radio associative à Tours faisant partie de la [[http://ferarock.org/", "url": "http://www.radiobeton.com/", "website": "", "logo": null}, {"name": "Radio Cagnac", "url": "https://go.2stream.net/cagnac_sd.mp3", "website": "https://radiocagnac.fr/", "logo": "https://logo.clearbit.com/radiocagnac.fr"}, {"name": "Radio Campus Amiens", "url": "http://live.radiocampus.fr:8000/amiens", "website": "http://www.radiocampusamiens.fr/", "logo": "https://logo.clearbit.com/radiocampusamiens.fr"}, {"name": "Radio Campus Angers", "url": "https://diffusion.lafrap.fr/rca", "website": "https://www.radiocampusangers.com/", "logo": "https://logo.clearbit.com/radiocampusangers.com"}, {"name": "Radio Campus Bordeaux", "url": "http://live.radiocampus.fr:8000/campus-bordeaux", "website": "http://www.bordeaux.radio-campus.org/", "logo": "https://logo.clearbit.com/bordeaux.radio-campus.org"}, {"name": "Radio Campus Clermont", "url": "http://campus.abeille.com:8000/campus", "website": "http://www.clermont.radiocampus.org/", "logo": "https://logo.clearbit.com/clermont.radiocampus.org"}, {"name": "Radio Campus Grenoble", "url": "https://live.campusgrenoble.org/rcg112", "website": "https://campusgrenoble.org/", "logo": "https://logo.clearbit.com/campusgrenoble.org"}, {"name": "Radio Campus Lille", "url": "http://radiocampuslille.ice.infomaniak.ch:80/radiocampuslille-96.aac", "website": "http://www.campuslille.com/", "logo": "https://logo.clearbit.com/campuslille.com"}, {"name": "Radio Campus Orléans", "url": "http://orleans.radiocampus.org:8000/stream_rco", "website": "http://www.orleans.radiocampus.org/", "logo": "https://logo.clearbit.com/orleans.radiocampus.org"}, {"name": "Radio Campus Toulouse", "url": "http://live.radio-campus.org:8000/toulouse", "website": "http://www.campusfm.net/wp/", "logo": "https://logo.clearbit.com/campusfm.net"}, {"name": "Radio Campus Tours", "url": "http://91.121.179.64:8000/webradiocampustours", "website": "http://www.radiocampustours.com", "logo": "https://logo.clearbit.com/radiocampustours.com"}, {"name": "Radio Canut", "url": "http://live.francra.org:8000/radiocanut", "website": "https://radiocanut.org/", "logo": "https://logo.clearbit.com/radiocanut.org"}, {"name": "Radio CAPSAO", "url": "http://str0.creacast.com/capsao_b", "website": "https://www.capsao.com/", "logo": "https://logo.clearbit.com/capsao.com"}, {"name": "Radio Caroline", "url": "https://radiocast-002.m2network.fr:8443/radiocaroline.mp3", "website": "http://radiocaroline.eu/", "logo": "https://logo.clearbit.com/radiocaroline.eu"}, {"name": "Radio Chalom Nitsan (RCN)", "url": "http://rcnradiochalomcotedazur.ice.infomaniak.ch/rcnradiochalomcotedazur-128.mp3", "website": "http://www.radiochalomnitsan.com/", "logo": "https://logo.clearbit.com/radiochalomnitsan.com"}, {"name": "Radio Cité Vauban (RCV)", "url": "http://listen.radioking.com/radio/3086/stream/9476", "website": "http://www.rcv-lille.com/", "logo": "https://logo.clearbit.com/rcv-lille.com"}, {"name": "Radio Clapas", "url": "https://stations.radioclapas.fr/radio/8130/radio.mp3", "website": "https://www.radioclapas.fr", "logo": "https://logo.clearbit.com/radioclapas.fr"}, {"name": "Radio Classique", "url": "http://radioclassique.ice.infomaniak.ch/radioclassique-high.mp3", "website": "http://www.radioclassique.com/", "logo": "https://logo.clearbit.com/radioclassique.com"}, {"name": "Radio Courtoisie", "url": "https://radiocourtoisie.nex-informatique.com/;stream.nsv", "website": "https://www.radiocourtoisie.fr/", "logo": "https://logo.clearbit.com/radiocourtoisie.fr"}, {"name": "Radio Cristal", "url": "http://stream.inovacast.fr:8888/stream", "website": "http://www.radiocristal.org/", "logo": "https://logo.clearbit.com/radiocristal.org"}, {"name": "Radio CSM Soissons", "url": "http://radiocsm2.ice.infomaniak.ch:80/radiocsm2-128", "website": "https://www.radiocsm.com/", "logo": "https://logo.clearbit.com/radiocsm.com"}, {"name": "Radio Dio", "url": "http://live.francra.org:8000/RadioDio", "website": "http://www.radiodio.org/", "logo": "https://logo.clearbit.com/radiodio.org"}, {"name": "Radio Dreyeckland Libre 68 (RDL68)", "url": "http://sv3.vestaradio.com:4060/;stream.mp3", "website": "http://www.rdl68.fr", "logo": "https://logo.clearbit.com/rdl68.fr"}, {"name": "Radio DY10", "url": "https://flux.radiody10.com/airtime_128", "website": "https://radiody10.com/", "logo": "https://logo.clearbit.com/radiody10.com"}, {"name": "Radio ECN", "url": "http://str30.creacast.com/ecn1", "website": "http://www.radioecn.com/", "logo": "https://logo.clearbit.com/radioecn.com"}, {"name": "Radio EFM", "url": "http://efm.elliptic.fr:8030/", "website": "http://www.radioefm.fr/", "logo": "https://logo.clearbit.com/radioefm.fr"}, {"name": "Radio En Construction (R.E.C.)", "url": "http://str0.creacast.com/rec", "website": "http://www.radioenconstruction.com", "logo": "https://logo.clearbit.com/radioenconstruction.com"}, {"name": "Radio Escapades", "url": "http://stream.radios-arra.fr:8000/radioescapades", "website": "https://www.radioescapades.org/", "logo": "https://logo.clearbit.com/radioescapades.org"}, {"name": "Radio Espace", "url": "http://radioespace.ice.infomaniak.ch/radioespace-high.mp3", "website": "https://www.radioespace.com/", "logo": "https://logo.clearbit.com/radioespace.com"}, {"name": "Radio Espérance", "url": "https://esperance.streamakaci.com/esperance.mp3", "website": "https://radio-esperance.fr/", "logo": "https://logo.clearbit.com/radio-esperance.fr"}, {"name": "Radio Espérance Byzantin", "url": "https://esperance.streamakaci.com/alraja.mp3", "website": "https://player.radio-esperance.fr/?radio=alaraja#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance En marie", "url": "https://esperance.streamakaci.com/aufil.mp3", "website": "https://player.radio-esperance.fr/?radio=au-fil-du-temps#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance Enseignements", "url": "https://esperance.streamakaci.com/enseignement.mp3", "website": "https://player.radio-esperance.fr/?radio=enseignement#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance Grégorien", "url": "https://esperance.streamakaci.com/gregorien.mp3", "website": "https://player.radio-esperance.fr/?radio=chant-gregorien#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance Louange", "url": "https://esperance.streamakaci.com/louange.mp3", "website": "https://player.radio-esperance.fr/?radio=louange#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance Musique Sacrée", "url": "https://esperance.streamakaci.com/musique.mp3", "website": "https://player.radio-esperance.fr/?radio=musique-sacree#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Espérance Parole de Dieu", "url": "https://esperance.streamakaci.com/parole-de-dieu.mp3", "website": "https://player.radio-esperance.fr/?radio=parole-de-dieu#current", "logo": "https://logo.clearbit.com/player.radio-esperance.fr"}, {"name": "Radio Ethic", "url": "http://163.172.37.18:8000/radioethic.mp3", "website": "http://www.radioethic.com/", "logo": "https://logo.clearbit.com/radioethic.com"}, {"name": "Radio Fidélité", "url": "https://diffusion.lafrap.fr/fidelite.mp3", "website": "https://www.radiofidelite.com/", "logo": "https://logo.clearbit.com/radiofidelite.com"}, {"name": "Radio Flemme", "url": "http://str45.streamakaci.com:8014/;", "website": "http://www.radioflemme.com/index.html", "logo": "https://logo.clearbit.com/radioflemme.com"}, {"name": "Radio FMR (Radio à Toulouse faisant partie de la [[http://ferarock.org/", "url": "https://radio-fmr.net/", "website": "", "logo": null}, {"name": "Radio G!", "url": "http://46.105.110.80:8000/fluxradiog", "website": "https://www.radio-g.fr/", "logo": "https://logo.clearbit.com/radio-g.fr"}, {"name": "Radio Galère", "url": "http://www.radiogalere.org:8080/galere.mp3", "website": "http://www.radiogalere.org", "logo": "https://logo.clearbit.com/radiogalere.org"}, {"name": "Radio Gazelle", "url": "http://france1.coollabel-productions.com:8134/stream", "website": "http://www.radiogazelle.net/", "logo": "https://logo.clearbit.com/radiogazelle.net"}, {"name": "Radio Gerard", "url": "http://188.165.236.217:8000/;", "website": "http://www.mistercouzin.net/radio/", "logo": "https://logo.clearbit.com/mistercouzin.net"}, {"name": "radio Graf'hit 94.9FM - radio locale indépendante à Compiègne", "url": "http://109.238.10.2:8000/grafhit.mp3", "website": "https://grafhit.net/", "logo": "https://logo.clearbit.com/grafhit.net"}, {"name": "Radio Graffiti (Nancy)", "url": "http://stream.votreradiosurlenet.eu/graffiti.mp3", "website": "http://radiograffiti.fr/", "logo": "https://logo.clearbit.com/radiograffiti.fr"}, {"name": "Radio Graffiti's (Fismes)", "url": "http://51.75.255.133:8000/stream", "website": "https://radio-graffiti.com/", "logo": "https://logo.clearbit.com/radio-graffiti.com"}, {"name": "Radio Grenouille", "url": "https://live.radiogrenouille.com:8443/live", "website": "https://www.radiogrenouille.com/", "logo": "https://logo.clearbit.com/radiogrenouille.com"}, {"name": "Radio Grille Ouverte", "url": "http://stream.radios-arra.fr:8000/rgo", "website": "https://radiogrilleouverte.com/", "logo": "https://logo.clearbit.com/radiogrilleouverte.com"}, {"name": "Radio Jeunes Reims (RJR)", "url": "https://stream.rjrradio.fr/rjr.mp3", "website": "https://www.rjrradio.fr/", "logo": "https://logo.clearbit.com/rjrradio.fr"}, {"name": "Radio Judaica Strasbourg", "url": "http://radiojudaicastrasbourg.ice.infomaniak.ch/radiojudaicastrasbourg-128.mp3", "website": "https://www.radiojudaicastrasbourg.fr/", "logo": "https://logo.clearbit.com/radiojudaicastrasbourg.fr"}, {"name": "Radio Junior", "url": "http://213.186.61.62:8080/;", "website": "http://www.radiojunior.com/", "logo": "https://logo.clearbit.com/radiojunior.com"}, {"name": "Radio Kerne", "url": "http://kerne.online.stalig.net/live.mp3", "website": "https://www.radiokerne.bzh/fr/", "logo": "https://logo.clearbit.com/radiokerne.bzh"}, {"name": "Radio Kreiz Breizh", "url": "http://rkb.online.radiobreizh.bzh/live.mp3", "website": "https://www.rkb.bzh/", "logo": "https://logo.clearbit.com/rkb.bzh"}, {"name": "Radio Krimi", "url": "http://radio13.pro-fhi.net:9240/stream", "website": "http://www.radiokrimi.com/", "logo": "https://logo.clearbit.com/radiokrimi.com"}, {"name": "Radio Larzac", "url": "http://stream.radiolarzac.org:8000/radiolarzac", "website": "http://www.radiolarzac.org/", "logo": "https://logo.clearbit.com/radiolarzac.org"}, {"name": "Radio Latitude Troyes", "url": "http://latitude.ice.infomaniak.ch/latitude-128.mp3", "website": "http://www.radiolatitude.com/", "logo": "https://logo.clearbit.com/radiolatitude.com"}, {"name": "Radio Libertaire", "url": "http://ecoutez.radio-libertaire.org:8080/radiolib.mp3", "website": "https://www.radio-libertaire.net/", "logo": "https://logo.clearbit.com/radio-libertaire.net"}, {"name": "Radio Marais", "url": "https://rm.ice.infomaniak.ch/rm-192.aac", "website": "https://www.rm-lemediadesgens.com/", "logo": "https://logo.clearbit.com/rm-lemediadesgens.com"}, {"name": "Radio Maritima", "url": "http://radiomaritima.streamakaci.com/radiomaritima.mp3", "website": "http://www.maritima.info/radio/", "logo": "https://logo.clearbit.com/maritima.info"}, {"name": "Radio María - France", "url": "http://heberg.radioludo.com:8003/stream", "website": "http://www.radiomaria.fr/", "logo": "https://logo.clearbit.com/radiomaria.fr"}, {"name": "Radio Mau Nau", "url": "http://radiomaunau.net/streaming", "website": "https://www.radiomaunau.net/", "logo": "https://logo.clearbit.com/radiomaunau.net"}, {"name": "Radio MDM", "url": "http://www.radio-mdm.fr:8000/listen.pls", "website": "http://www.radio-mdm.fr", "logo": "https://logo.clearbit.com/radio-mdm.fr"}, {"name": "Radio Metropolys", "url": "http://str0.creacast.com/metropolys", "website": "http://www.metropolys.com/", "logo": "https://logo.clearbit.com/metropolys.com"}, {"name": "Radio Meuh", "url": "http://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3", "website": "https://www.radiomeuh.com/", "logo": "https://logo.clearbit.com/radiomeuh.com"}, {"name": "Radio Mille Pattes", "url": "http://millepattes.ice.infomaniak.ch:80/millepattes-high", "website": "http://www.radiomillepattes.com/", "logo": "https://logo.clearbit.com/radiomillepattes.com"}, {"name": "Radio MNE", "url": "http://ns378395.ip-5-196-68.eu:8000/airtime_192", "website": "http://radiomne.com/", "logo": "https://logo.clearbit.com/radiomne.com"}, {"name": "Radio Mont Blanc", "url": "http://radiomontblanc1.ice.infomaniak.ch/radiomontblanc1-128.mp3", "website": "http://www.radiomontblanc.fr/", "logo": "https://logo.clearbit.com/radiomontblanc.fr"}, {"name": "Radio Médecine Douce", "url": "https://radiomedecinedouce.com/stream/medecinedouce.mp3", "website": "https://radiomedecinedouce.com/", "logo": "https://logo.clearbit.com/radiomedecinedouce.com"}, {"name": "Radio Mélodie", "url": "http://str0.creacast.com/melodie", "website": "http://www.radiomelodie.com/", "logo": "https://logo.clearbit.com/radiomelodie.com"}, {"name": "Radio Métal", "url": "https://radio3.pro-fhi.net/live/Radio", "website": "https://www.radiometal.com/", "logo": "https://logo.clearbit.com/radiometal.com"}, {"name": "Radio Notre Dame", "url": "http://windu.radionotredame.net/RadioNotreDame-Fm.mp3", "website": "https://radionotredame.net/", "logo": "https://logo.clearbit.com/radionotredame.net"}, {"name": "Radio Nova", "url": "http://radionova.ice.infomaniak.ch/radionova-256.aac", "website": "http://www.novaplanet.com/", "logo": "https://logo.clearbit.com/novaplanet.com"}, {"name": "Radio Nova Bordeaux", "url": "http://snb.ice.infomaniak.ch/snb-high.mp3", "website": "https://www.nova.fr/radionova/nova-bordeaux", "logo": "https://logo.clearbit.com/nova.fr"}, {"name": "Radio Nova Lyon", "url": "http://nova-lyon.ice.infomaniak.ch/nova-lyon-128.mp3", "website": "https://www.nova.fr/radionova/nova-lyon", "logo": "https://logo.clearbit.com/nova.fr"}, {"name": "Radio NTI", "url": "http://streaming.radionti.com/nti-hd.mp3", "website": "https://www.radionti.com/", "logo": "https://logo.clearbit.com/radionti.com"}, {"name": "Radio Orient", "url": "http://stream3.broadcast-associes.com:8405/Radio-Orient", "website": "http://www.radioorient.com", "logo": "https://logo.clearbit.com/radioorient.com"}, {"name": "Radio Oxygène", "url": "http://str0.creacast.com/oxy-melun", "website": "http://www.radiooxygene.com/", "logo": "https://logo.clearbit.com/radiooxygene.com"}, {"name": "Radio Paolina", "url": "http://altaserena.ice.infomaniak.ch/altaserena-128.mp3", "website": "https://www.facebook.com/PaolinaRadio", "logo": "https://logo.clearbit.com/facebook.com"}, {"name": "Radio Partage", "url": "https://live.radiopartage.net/stream", "website": "https://www.radiopartage.net/", "logo": "https://logo.clearbit.com/radiopartage.net"}, {"name": "Radio Paul Bert", "url": "http://www.rpbfm.fr:8000/stream", "website": "http://www.rpbfm.fr", "logo": "https://logo.clearbit.com/rpbfm.fr"}, {"name": "Radio Perfecto", "url": "http://radioperfecto.net-radio.fr/perfecto.mp3", "website": "http://www.radioperfecto.com/", "logo": "https://logo.clearbit.com/radioperfecto.com"}, {"name": "Radio PFM", "url": "http://178.33.237.20:8000/stream.mp3", "website": "https://www.radiopfm.com/", "logo": "https://logo.clearbit.com/radiopfm.com"}, {"name": "Radio Pitchoun", "url": "https://listen.radioking.com/radio/81811/stream/120004", "website": "https://tvradio-pitchoun.fr/player/radio", "logo": "https://logo.clearbit.com/tvradio-pitchoun.fr"}, {"name": "Radio Plus", "url": "https://radioplus2.ice.infomaniak.ch/radioplus.aac", "website": "https://www.radioplus.fr/", "logo": "https://logo.clearbit.com/radioplus.fr"}, {"name": "Radio Primitive", "url": "https://www.radioprimitive.fr:8443/live.mp3", "website": "https://www.radioprimitive.fr", "logo": "https://logo.clearbit.com/radioprimitive.fr"}, {"name": "Radio Pulse", "url": "http://radiopulse.fr:8080/pulse", "website": "https://www.radiopulse.fr/", "logo": "https://logo.clearbit.com/radiopulse.fr"}, {"name": "Radio Rempart", "url": "http://radio.pro-fhi.net:9112/;stream1", "website": "https://www.radiorempart.fr/", "logo": "https://logo.clearbit.com/radiorempart.fr"}, {"name": "Radio Rencontre", "url": "https://listen.radioking.com/radio/153745/stream/194338", "website": "http://radio-rencontre.fr/", "logo": "https://logo.clearbit.com/radio-rencontre.fr"}, {"name": "Radio Rennes", "url": "https://play.vestaradio.com/RADIORENNES.mp3", "website": "http://www.radiorennes.fr/", "logo": "https://logo.clearbit.com/radiorennes.fr"}, {"name": "Radio RFR Fréquence Rétro", "url": "https://radio3.pro-fhi.net/listen-ktuqbldu-stream.mp3", "website": "https://www.radiorfr.fr/", "logo": "https://logo.clearbit.com/radiorfr.fr"}, {"name": "Radio RVA", "url": "http://rva.ice.infomaniak.ch/rva-high.mp3", "website": "http://www.radiorva.com/", "logo": "https://logo.clearbit.com/radiorva.com"}, {"name": "Radio Salve Regina", "url": "http://stric6.streamakaci.com/radiosalveregina.mp3", "website": "http://www.rsr.ift.fr/", "logo": "https://logo.clearbit.com/rsr.ift.fr"}, {"name": "Radio Scoop Bourg en Bresse", "url": "http://radioscoopbourg-en-bresse.ice.infomaniak.ch/radioscoop-bourg-128.mp3", "website": "http://www.radioscoop.com/", "logo": "https://logo.clearbit.com/radioscoop.com"}, {"name": "Radio Scoop Clermont-Ferrand", "url": "http://radioscoopclermont-ferrand.ice.infomaniak.ch/radioscoop-clermont-128.mp3", "website": "http://www.radioscoop.com/", "logo": "https://logo.clearbit.com/radioscoop.com"}, {"name": "Radio Scoop Lyon", "url": "http://radioscooplyon.ice.infomaniak.ch/radioscoop-lyon-128.mp3", "website": "http://www.radioscoop.com/", "logo": "https://logo.clearbit.com/radioscoop.com"}, {"name": "Radio Scoop Saint Etienne", "url": "http://radioscoopsaintetienne.ice.infomaniak.ch/radioscoop-stetienne-128.mp3", "website": "http://www.radioscoop.com/", "logo": "https://logo.clearbit.com/radioscoop.com"}, {"name": "Radio Sensations", "url": "http://sensations.ice.infomaniak.ch/sensations.mp3", "website": "http://www.radiosensations.fr/", "logo": "https://logo.clearbit.com/radiosensations.fr"}, {"name": "Radio Serenity", "url": "http://streaming.radionomy.com/wiccaradio", "website": "http://radioserenity1.playtheradio.com/", "logo": "https://logo.clearbit.com/radioserenity1.playtheradio.com"}, {"name": "Radio Show", "url": "http://www.radioking.com/play/radio-show", "website": "http://www.radioshow.fr/sommaire.html", "logo": "https://logo.clearbit.com/radioshow.fr"}, {"name": "Radio Star (Marseille)", "url": "https://listen.radioking.com/radio/9728/stream/49346", "website": "http://www.radiostarcom.com/", "logo": "https://logo.clearbit.com/radiostarcom.com"}, {"name": "Radio Star (Montbéliard)", "url": "http://radiostar.ice.infomaniak.ch/radiostar-128.mp3", "website": "https://www.radiostar.fr/", "logo": "https://logo.clearbit.com/radiostar.fr"}, {"name": "Radio Système", "url": "http://stream.radios-arra.fr:8000/radiosysteme", "website": "https://www.radiosysteme.fr/", "logo": "https://logo.clearbit.com/radiosysteme.fr"}, {"name": "Radio Ter", "url": "http://62.210.215.26:8002/radioter", "website": "https://www.radioter.net/", "logo": "https://logo.clearbit.com/radioter.net"}, {"name": "Radio Val d'Or", "url": "http://stream3.vestaradio.com/RADIOVALDOR", "website": "http://www.radiovaldor.com/", "logo": "https://logo.clearbit.com/radiovaldor.com"}, {"name": "Radio Val-de-Meuse (RVM)", "url": "http://stream.rvm.fr:8022/stream.mp3", "website": "https://www.rvm.fr", "logo": "https://logo.clearbit.com/rvm.fr"}, {"name": "Radio Vieille Eglise (RVE)", "url": "http://str0.creacast.com/rve", "website": "http://www.radiorve.com", "logo": "https://logo.clearbit.com/radiorve.com"}, {"name": "Radio Zinzine", "url": "http://91.121.65.189:8000/3", "website": "http://radizinzine.org", "logo": "https://logo.clearbit.com/radizinzine.org"}, {"name": "Radio Zinzine Aix", "url": "http://91.121.65.189:8000/zinzine-aix", "website": "http://radiozinzineaix.org/", "logo": "https://logo.clearbit.com/radiozinzineaix.org"}, {"name": "Radio Émotion", "url": "https://stream.rcs.revma.com/4ty9verpuf9uv", "website": "http://radio-emotion.fr/", "logo": "https://logo.clearbit.com/radio-emotion.fr"}, {"name": "Radio-Bro-Gwened", "url": "http://rbg.online.radiobreizh.bzh/live.mp3", "website": "http://www.radio-bro-gwened.com/fr", "logo": "https://logo.clearbit.com/radio-bro-gwened.com"}, {"name": "Radio87", "url": "http://live2.radio87.fr", "website": "http://www.radio87.fr/", "logo": "https://logo.clearbit.com/radio87.fr"}, {"name": "RAJE", "url": "https://raje.ice.infomaniak.ch/raje-128.mp3", "website": "https://www.raje.fr/", "logo": "https://logo.clearbit.com/raje.fr"}, {"name": "RFI Afrique", "url": "http://live02.rfi.fr/rfiafrique-96k.mp3", "website": "http://www.rfi.fr/emissions", "logo": "https://logo.clearbit.com/rfi.fr"}, {"name": "RFI Monde", "url": "http://live02.rfi.fr/rfimonde-96k.mp3", "website": "http://www.rfi.fr/emissions", "logo": "https://logo.clearbit.com/rfi.fr"}, {"name": "RFM", "url": "https://stream.rfm.fr/rfm.aac", "website": "http://www.rfm.fr/", "logo": "https://logo.clearbit.com/rfm.fr"}, {"name": "RFM Night Fever", "url": "https://stream.rfm.fr/rfm-wr2.aac", "website": "http://www.rfm.fr/", "logo": "https://logo.clearbit.com/rfm.fr"}, {"name": "RFM Party 80", "url": "https://stream.rfm.fr/rfm-wr4.aac", "website": "http://www.rfm.fr/", "logo": "https://logo.clearbit.com/rfm.fr"}, {"name": "RIG", "url": "https://stream.aquifm.fr/listenrig.mp3", "website": "http://www.rigfm.fr/", "logo": "https://logo.clearbit.com/rigfm.fr"}, {"name": "Rinse France", "url": "https://radio10.pro-fhi.net/flux-trmqtiat/stream", "website": "https://rinse.fm/channels/france/", "logo": "https://logo.clearbit.com/rinse.fm"}, {"name": "RIRE ET CHANSONS", "url": "https://streaming.nrjaudio.fm/ou8o8xgk7oiu?origine=ubuntu-fr.org", "website": "http://www.rireetchansons.fr/", "logo": "https://logo.clearbit.com/rireetchansons.fr"}, {"name": "RMC Info Talk Sport", "url": "https://audio.bfmtv.com/rmcradio_128.mp3?aw_0_1st.playerId=RMC_audio_web&aggregator=RMC_audio_web", "website": "https://rmc.bfmtv.com/", "logo": "https://logo.clearbit.com/rmc.bfmtv.com"}, {"name": "RMV", "url": "http://91.121.7.61:8200/", "website": "http://www.rmvradio.fr/", "logo": "https://logo.clearbit.com/rmvradio.fr"}, {"name": "RPL Radio", "url": "https://listen.radioking.com/radio/2966/stream/63127", "website": "http://rpl99fm.com", "logo": "https://logo.clearbit.com/rpl99fm.com"}, {"name": "RTL", "url": "https://icecast.rtl.fr/rtl-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4", "website": "https://www.rtl.fr/", "logo": "https://logo.clearbit.com/rtl.fr"}, {"name": "RTL2", "url": "https://icecast.rtl.fr/rtl2-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4", "website": "https://www.rtl2.fr/", "logo": "https://logo.clearbit.com/rtl2.fr"}, {"name": "RTS Avignon", "url": "http://sc.creacast.com/rts-avignon", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Béziers", "url": "http://sc.creacast.com/rts-beziers", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Montpellier", "url": "http://sc.creacast.com/rts-montpellier", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Narbonne", "url": "http://sc.creacast.com/rts-narbonne", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Nîmes", "url": "http://sc.creacast.com/rts-nimes", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Perpignan", "url": "http://sc.creacast.com/rts-perpignan", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Sète", "url": "http://sc.creacast.com/rts-sete", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "RTS Toulouse", "url": "http://sc.creacast.com/rts-toulouse", "website": "https://www.rtsfm.com/", "logo": "https://logo.clearbit.com/rtsfm.com"}, {"name": "Ràdio Lenga d'Òc", "url": "http://91.121.147.40:8000/rlo-direct.mp3", "website": "https://radiolengadoc.com/", "logo": "https://logo.clearbit.com/radiolengadoc.com"}, {"name": "Ràdio País", "url": "http://france16.coollabel-productions.com:8272/stream", "website": "https://fr.wikipedia.org/wiki/R%C3%A0dio%20Pa%C3%ADs", "logo": "https://logo.clearbit.com/fr.wikipedia.org"}, {"name": "Réunion 1ère", "url": "http://radios.la1ere.fr/reunion", "website": "http://reunion.la1ere.fr/", "logo": "https://logo.clearbit.com/reunion.la1ere.fr"}, {"name": "Saint-Pierre-et-Miquelon 1ère", "url": "http://radios.la1ere.fr/saintpierremiquelon", "website": "http://saintpierremiquelon.la1ere.fr/", "logo": "https://logo.clearbit.com/saintpierremiquelon.la1ere.fr"}, {"name": "Secousse", "url": "https://stream.secousse.org/secousse", "website": "https://secousse.tv/", "logo": "https://logo.clearbit.com/secousse.tv"}, {"name": "Sing Sing", "url": "http://stream.sing-sing-bis.org:8000/singsing128", "website": "http://sing-sing-bis.org", "logo": "https://logo.clearbit.com/sing-sing-bis.org"}, {"name": "Skyrock", "url": "http://icecast.skyrock.net/s/natio_mp3_128k", "website": "http://www.skyrock.fm/", "logo": "https://logo.clearbit.com/skyrock.fm"}, {"name": "Skyrock pour les militaires", "url": "https://icecast.skyrock.net/s/plm_aac_128k", "website": "https://skyrock.fm/plm/", "logo": "https://logo.clearbit.com/skyrock.fm"}, {"name": "SOL-FM 100.7", "url": "http://stric6.streamakaci.com/solfm64.mp3", "website": "http://solfm.nerim.net", "logo": "https://logo.clearbit.com/solfm.nerim.net"}, {"name": "SpuTnik France", "url": "https://nfw.ria.ru/flv/audio.aspx?ID=6854085&amp;type=mp3", "website": "https://fr.sputniknews.com/", "logo": "https://logo.clearbit.com/fr.sputniknews.com"}, {"name": "Sud Radio", "url": "https://live.sudradio.fr/sudradio-mp3-128", "website": "https://www.sudradio.fr/", "logo": "https://logo.clearbit.com/sudradio.fr"}, {"name": "SUN", "url": "https://diffusion.lafrap.fr/sunhd.mp3", "website": "http://www.lesonunique.com/", "logo": "https://logo.clearbit.com/lesonunique.com"}, {"name": "Sweet FM", "url": "http://dedibox-linux.sweetfm.fr:8000/lms", "website": "http://www.sweetfm.fr/", "logo": "https://logo.clearbit.com/sweetfm.fr"}, {"name": "Swing FM", "url": "http://swingfm.ice.infomaniak.ch:80/swingfm-128", "website": "http://www.swingfm.asso.fr/", "logo": "https://logo.clearbit.com/swingfm.asso.fr"}, {"name": "Tendance Ouest", "url": "http://tendanceouest-centremanche.ice.infomaniak.ch/saintlo.mp3", "website": "https://www.tendanceouest.com/", "logo": "https://logo.clearbit.com/tendanceouest.com"}, {"name": "Timbre fm (Radio associative local et rural à Augan/Guer)", "url": "http://5.39.86.216:8666/timbrefm", "website": "http://timbrefm.fr/", "logo": "https://logo.clearbit.com/timbrefm.fr"}, {"name": "Tonic Radio", "url": "http://hit-sport.ice.infomaniak.ch/hit-sport-high.mp3", "website": "https://www.tonicradio.fr/", "logo": "https://logo.clearbit.com/tonicradio.fr"}, {"name": "Top Music", "url": "http://str0.creacast.com/topmusic1", "website": "http://www.topmusic.fr/", "logo": "https://logo.clearbit.com/topmusic.fr"}, {"name": "Toulouse FM", "url": "https://mmradios.ice.infomaniak.ch/toulousefm.mp3", "website": "http://www.toulousefm.fm/", "logo": "https://logo.clearbit.com/toulousefm.fm"}, {"name": "TSF Jazz", "url": "http://tsfjazz.ice.infomaniak.ch:80/tsfjazz-high", "website": "http://www.tsfjazz.com/", "logo": "https://logo.clearbit.com/tsfjazz.com"}, {"name": "Vertige Radio", "url": "https://stream.vestaradio.com/VertigeRadio", "website": "https://www.vertigeradio.com", "logo": "https://logo.clearbit.com/vertigeradio.com"}, {"name": "Vibration", "url": "http://vibration.ice.infomaniak.ch/vibration-high.mp3", "website": "https://www.vibration.fr/", "logo": "https://logo.clearbit.com/vibration.fr"}, {"name": "Virage Radio", "url": "http://virageradio.ice.infomaniak.ch/virageradio-high.mp3", "website": "https://www.virageradio.com/", "logo": "https://logo.clearbit.com/virageradio.com"}, {"name": "Voce Nustrale", "url": "http://213.186.61.62:8000/;", "website": "http://voce.pro/", "logo": "https://logo.clearbit.com/voce.pro"}, {"name": "Voltage 96.9 FM", "url": "https://start-voltage.ice.infomaniak.ch/start-voltage-high.mp3", "website": "http://www.voltage.fr/", "logo": "https://logo.clearbit.com/voltage.fr"}, {"name": "Voltage 96.9 FM 2000", "url": "https://voltage2000.ice.infomaniak.ch/voltage2000-128.mp3", "website": "http://www.voltage.fr/", "logo": "https://logo.clearbit.com/voltage.fr"}, {"name": "Voltage 96.9 FM 80's", "url": "https://voltage80s.ice.infomaniak.ch/voltage80s-128.mp3", "website": "http://www.voltage.fr/", "logo": "https://logo.clearbit.com/voltage.fr"}, {"name": "Voltage 96.9 FM 90's", "url": "https://voltage90s.ice.infomaniak.ch/voltage90s-128.mp3", "website": "http://www.voltage.fr/", "logo": "https://logo.clearbit.com/voltage.fr"}, {"name": "Voltage 96.9 FM Club", "url": "https://voltageclub.ice.infomaniak.ch/voltageclub-128.mp3", "website": "http://www.voltage.fr/", "logo": "https://logo.clearbit.com/voltage.fr"}, {"name": "Wallis et Futuna 1ère", "url": "http://radios.la1ere.fr/wallisfutuna", "website": "http://wallisfutuna.la1ere.fr/", "logo": "https://logo.clearbit.com/wallisfutuna.la1ere.fr"}, {"name": "Welsass", "url": "http://welsass.fr:80/play", "website": "http://www.welsass.fr/", "logo": "https://logo.clearbit.com/welsass.fr"}, {"name": "Wit FM", "url": "http://broadcast.infomaniak.net/start-witfm-high.mp3", "website": "http://www.witfm.fr", "logo": "https://logo.clearbit.com/witfm.fr"}, {"name": "Yvelines Radio", "url": "http://yvelinesradio884fm.ice.infomaniak.ch/yvelinesradio884fm-96.aac", "website": "http://www.yvelinesradio.com/radio/", "logo": "https://logo.clearbit.com/yvelinesradio.com"}, {"name": "Zen Radio ", "url": "http://flux1.zenradio.fr:8800", "website": "http://www.zenradio.fr", "logo": "https://logo.clearbit.com/zenradio.fr"}, {"name": "ZJM", "url": "http://zjm.ice.infomaniak.ch/zjm-128.aac", "website": "http://www.zjmradio.com/", "logo": "https://logo.clearbit.com/zjmradio.com"}]    ;
 
     const radioGrid = document.getElementById('radio-grid');
     const searchInput = document.getElementById('search-input');
@@ -308,46 +383,82 @@
     const currentName = document.getElementById('current-name');
     const currentStatus = document.getElementById('current-status');
     const currentLogo = document.getElementById('current-logo');
-    const volumeSlider = document.getElementById('volume-slider');
-    const loadingSpinner = document.getElementById('loading-spinner');
+    const carModeToggle = document.getElementById('car-mode-toggle');
+    const voiceSearchBtn = document.getElementById('voice-search');
 
+    let favorites = JSON.parse(localStorage.getItem('radio-favorites') || '[]');
     let currentRadio = null;
+    let isCarMode = localStorage.getItem('car-mode') === 'true';
 
     function init() {
-        renderRadios(radioData);
+        if (isCarMode) {
+            document.body.classList.add('car-mode');
+            carModeToggle.classList.add('active');
+        }
 
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = radioData.filter(r => r.name.toLowerCase().includes(term));
-            renderRadios(filtered);
+        renderRadios();
+
+        searchInput.addEventListener('input', () => renderRadios());
+
+        carModeToggle.addEventListener('click', () => {
+            isCarMode = !isCarMode;
+            document.body.classList.toggle('car-mode', isCarMode);
+            carModeToggle.classList.toggle('active', isCarMode);
+            localStorage.setItem('car-mode', isCarMode);
+            renderRadios();
         });
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            voiceSearchBtn.style.display = 'none';
+        } else {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                renderRadios();
+                // If there's exactly one match, play it!
+                const term = transcript.toLowerCase();
+                const matches = radioData.filter(r => r.name.toLowerCase().includes(term));
+                if (matches.length === 1) {
+                    selectRadio(matches[0]);
+                }
+            };
+
+            recognition.onstart = () => { voiceSearchBtn.classList.add('active'); };
+            recognition.onend = () => { voiceSearchBtn.classList.remove('active'); };
+            recognition.onerror = () => { voiceSearchBtn.classList.remove('active'); };
+
+            voiceSearchBtn.addEventListener('click', () => {
+                recognition.start();
+            });
+        }
 
         playBtn.addEventListener('click', togglePlay);
 
-        volumeSlider.addEventListener('input', (e) => {
-            audioPlayer.volume = e.target.value;
-        });
-
         audioPlayer.addEventListener('playing', () => {
             playIcon.textContent = '⏸';
-            currentStatus.textContent = 'En lecture';
+            currentStatus.textContent = 'En direct';
             document.body.classList.remove('buffering');
-            document.body.classList.add('playing');
             updateMediaSession();
         });
 
         audioPlayer.addEventListener('pause', () => {
             playIcon.textContent = '▶';
             currentStatus.textContent = 'Pause';
-            document.body.classList.remove('playing');
         });
 
         audioPlayer.addEventListener('waiting', () => {
             document.body.classList.add('buffering');
+            currentStatus.textContent = 'Chargement...';
         });
 
         audioPlayer.addEventListener('error', () => {
-            currentStatus.textContent = 'Erreur de lecture';
+            currentStatus.textContent = 'Erreur de flux';
             playIcon.textContent = '▶';
             document.body.classList.remove('buffering');
         });
@@ -358,24 +469,72 @@
             navigator.mediaSession.setActionHandler('stop', () => {
                 audioPlayer.pause();
                 audioPlayer.src = '';
+                currentStatus.textContent = 'Arrêté';
             });
+            navigator.mediaSession.setActionHandler('previoustrack', () => playAdjacent(-1));
+            navigator.mediaSession.setActionHandler('nexttrack', () => playAdjacent(1));
         }
     }
 
-    function renderRadios(radios) {
+    function renderRadios() {
+        const term = searchInput.value.toLowerCase();
+        let filtered = radioData.filter(r => r.name.toLowerCase().includes(term));
+
+        // In car mode, if there's no search, prioritize favorites
+        if (isCarMode && !term && favorites.length > 0) {
+            const favs = filtered.filter(r => favorites.includes(r.url));
+            const others = filtered.filter(r => !favorites.includes(r.url));
+            filtered = [...favs, ...others];
+        } else {
+            // Standard mode: sort by favorites first
+            const favs = filtered.filter(r => favorites.includes(r.url));
+            const others = filtered.filter(r => !favorites.includes(r.url));
+            filtered = [...favs, ...others];
+        }
+
         radioGrid.innerHTML = '';
-        radios.forEach(radio => {
+
+        if (filtered.length === 0) {
+            radioGrid.innerHTML = '<div class="empty-favorites">Aucune radio trouvée</div>';
+            return;
+        }
+
+        filtered.forEach(radio => {
+            const isFav = favorites.includes(radio.url);
             const card = document.createElement('div');
             card.className = 'radio-card';
             if (currentRadio && currentRadio.url === radio.url) {
                 card.classList.add('active');
             }
 
+            const favBtn = document.createElement('button');
+            favBtn.className = `fav-btn ${isFav ? 'active' : ''}`;
+            favBtn.innerHTML = '★';
+            favBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleFavorite(radio);
+                renderRadios();
+            };
+
             const logo = document.createElement('div');
-            logo.className = 'logo-placeholder';
+            logo.className = 'logo-container';
             if (radio.logo) {
                 logo.style.backgroundImage = `url(${radio.logo})`;
-                logo.textContent = '';
+                const img = new Image();
+                img.src = radio.logo;
+                img.onerror = () => {
+                    // Try Google Favicon as fallback
+                    if (radio.website) {
+                        const domain = new URL(radio.website).hostname;
+                        logo.style.backgroundImage = `url(https://www.google.com/s2/favicons?domain=${domain}&sz=128)`;
+                    } else {
+                        logo.style.backgroundImage = 'none';
+                        logo.textContent = radio.name.charAt(0);
+                    }
+                };
+            } else if (radio.website) {
+                const domain = new URL(radio.website).hostname;
+                logo.style.backgroundImage = `url(https://www.google.com/s2/favicons?domain=${domain}&sz=128)`;
             } else {
                 logo.textContent = radio.name.charAt(0);
             }
@@ -384,6 +543,7 @@
             name.className = 'radio-name';
             name.textContent = radio.name;
 
+            card.appendChild(favBtn);
             card.appendChild(logo);
             card.appendChild(name);
             card.addEventListener('click', () => selectRadio(radio));
@@ -391,14 +551,31 @@
         });
     }
 
+    function toggleFavorite(radio) {
+        const index = favorites.indexOf(radio.url);
+        if (index > -1) {
+            favorites.splice(index, 1);
+        } else {
+            favorites.push(radio.url);
+        }
+        localStorage.setItem('radio-favorites', JSON.stringify(favorites));
+    }
+
     function selectRadio(radio) {
+        if (currentRadio && currentRadio.url === radio.url && !audioPlayer.paused) {
+            togglePlay();
+            return;
+        }
+
         currentRadio = radio;
         currentName.textContent = radio.name;
         currentStatus.textContent = 'Chargement...';
+
         currentLogo.textContent = radio.logo ? '' : radio.name.charAt(0);
         currentLogo.style.backgroundImage = radio.logo ? `url(${radio.logo})` : 'none';
 
         audioPlayer.src = radio.url;
+        audioPlayer.load();
         audioPlayer.play();
         playBtn.disabled = false;
 
@@ -417,24 +594,49 @@
         }
     }
 
+    function playAdjacent(offset) {
+        const term = searchInput.value.toLowerCase();
+        let list = radioData.filter(r => r.name.toLowerCase().includes(term));
+        if (favorites.length > 0 && !term) {
+             const favs = list.filter(r => favorites.includes(r.url));
+             const others = list.filter(r => !favorites.includes(r.url));
+             list = [...favs, ...others];
+        }
+
+        if (!currentRadio || list.length === 0) return;
+
+        let index = list.findIndex(r => r.url === currentRadio.url);
+        if (index === -1) index = 0;
+
+        let nextIndex = (index + offset + list.length) % list.length;
+        selectRadio(list[nextIndex]);
+    }
+
     function updateMediaSession() {
         if ('mediaSession' in navigator && currentRadio) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: currentRadio.name,
                 artist: 'Radio Direct',
-                album: 'Streaming',
+                album: 'Streaming Français',
                 artwork: currentRadio.logo ? [
-                    { src: currentRadio.logo, sizes: '96x96', type: 'image/jpeg' },
-                    { src: currentRadio.logo, sizes: '128x128', type: 'image/jpeg' },
-                    { src: currentRadio.logo, sizes: '192x192', type: 'image/jpeg' },
-                    { src: currentRadio.logo, sizes: '256x256', type: 'image/jpeg' },
-                    { src: currentRadio.logo, sizes: '384x384', type: 'image/jpeg' },
-                    { src: currentRadio.logo, sizes: '512x512', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '96x96', type: 'image/png' },
+                    { src: currentRadio.logo, sizes: '128x128', type: 'image/png' },
+                    { src: currentRadio.logo, sizes: '192x192', type: 'image/png' },
+                    { src: currentRadio.logo, sizes: '256x256', type: 'image/png' },
+                    { src: currentRadio.logo, sizes: '384x384', type: 'image/png' },
+                    { src: currentRadio.logo, sizes: '512x512', type: 'image/png' },
                 ] : [
                     { src: 'https://via.placeholder.com/512?text=Radio', sizes: '512x512', type: 'image/png' }
                 ]
             });
         }
+    }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err));
+        });
     }
 
     init();
