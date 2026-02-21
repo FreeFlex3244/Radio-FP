@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio France Background Player</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #1db954;
+            --secondary-text: #b3b3b3;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1rem;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 20px;
+            border: none;
+            background-color: #333;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        #search-input:focus {
+            background-color: #444;
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            padding-bottom: 120px; /* Space for player */
+        }
+
+        .radio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .radio-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radio-card:hover {
+            background-color: #282828;
+            transform: translateY(-4px);
+        }
+
+        .radio-card.active {
+            border: 2px solid var(--accent-color);
+            background-color: #282828;
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background-color: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .radio-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 2.4rem;
+        }
+
+        .player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #181818;
+            border-top: 1px solid #282828;
+            padding: 0.8rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 200;
+        }
+
+        .current-info {
+            display: flex;
+            align-items: center;
+            width: 30%;
+            min-width: 150px;
+        }
+
+        .current-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 4px;
+            margin-right: 0.8rem;
+            background-color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background-size: cover;
+        }
+
+        .current-text {
+            overflow: hidden;
+        }
+
+        .current-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .current-status {
+            font-size: 0.75rem;
+            color: var(--secondary-text);
+        }
+
+        .player-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .buttons {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 30%;
+            justify-content: flex-end;
+            min-width: 100px;
+        }
+
+        #volume-slider {
+            width: 80px;
+            accent-color: var(--accent-color);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .volume-container {
+                display: none;
+            }
+            .current-info {
+                width: 70%;
+            }
+            .player-controls {
+                flex: none;
+            }
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .playing .loading-spinner {
+            display: none;
+        }
+
+        .buffering .loading-spinner {
+            display: block;
+        }
+
+        .buffering .play-icon {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Rechercher une radio...">
+    </div>
+</header>
+
+<main>
+    <div class="radio-grid" id="radio-grid">
+        <!-- Radio cards will be injected here -->
+    </div>
+</main>
+
+<div class="player-bar">
+    <div class="current-info">
+        <div class="current-logo" id="current-logo">📻</div>
+        <div class="current-text">
+            <div class="current-name" id="current-name">Sélectionnez une radio</div>
+            <div class="current-status" id="current-status">Arrêté</div>
+        </div>
+    </div>
+
+    <div class="player-controls">
+        <div class="buttons">
+            <button class="play-btn" id="play-btn" disabled>
+                <span class="play-icon" id="play-icon">▶</span>
+                <div class="loading-spinner" id="loading-spinner"></div>
+            </button>
+        </div>
+    </div>
+
+    <div class="volume-container">
+        <span>🔊</span>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+    </div>
+</div>
+
+<audio id="audio-player" playsinline></audio>
+
+<script>
+    const radioData = [{"name": "France Inter", "url": "http://direct.franceinter.fr/live/franceinter-midfi.mp3", "logo": null}, {"name": "France Info", "url": "https://icecast.radiofrance.fr/franceinfo-midfi.mp3", "logo": null}, {"name": "France Culture", "url": "https://direct.franceculture.fr/live/franceculture-midfi.mp3", "logo": null}, {"name": "RTL", "url": "https://icecast.rtl.fr/rtl-1-44-128?listen=webDQcCCwwIBwMFBgUABAwDDg", "logo": null}, {"name": "RTL 2", "url": "https://live.m6radio.quortex.io/webpHJPXnXrN7B6J7Q8mcqmxP/grouprtl2/national/long/audio-64000/index.m3u8", "logo": null}, {"name": "Europe 1", "url": "https://stream.europe1.fr/europe1.mp3?aw_0_1st.playerid=lgrdrnwsradio-en-lignefr", "logo": null}, {"name": "NRJ", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30001/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "NRJ ACOUSTIC HITS", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30157/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Acoustic-Hits", "logo": null}, {"name": "NRJ AFRO HITS", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57770/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Afro-Hits", "logo": null}, {"name": "NRJ ALL HITS ALL STYLES", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31149/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-All-Hits-All-Styles", "logo": null}, {"name": "NRJ AT HOME", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31011/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-At-Home", "logo": null}, {"name": "NRJ AT WORK", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30033/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-At-Work", "logo": null}, {"name": "NRJ BEST HITS EVER", "url": "https://scdn.nrjaudio.fm/adwz1/fr/31251/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Best-Hits-Ever", "logo": null}, {"name": "NRJ BEST OF 2022", "url": "https://scdn.nrjaudio.fm/adwz1/fr/58404/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Best-Of-2022", "logo": null}, {"name": "NRJ BIG PARTY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/58314/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Big-Party", "logo": null}, {"name": "NRJ BONNE ANNEE 2023", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57985/mp3_128.mp3?origine=mytuner&aw_0_1st.station=NRJ-Bonne-Annee-2023", "logo": null}, {"name": "Skyrock", "url": "https://www.skyrock.fm/stream.php/mytuner_128mp3.mp3", "logo": null}, {"name": "Hit Skyrock", "url": "https://skyrock.fm/stream_webradio.php/mytuner_hit-skyrock_64aac.aac", "logo": null}, {"name": "Radio Peinard Skyrock", "url": "http://str2.creacast.com:80/radio_peinard", "logo": null}, {"name": "Skyrock 100% Français", "url": "https://skyrock.fm/stream_webradio.php/mytuner_francais_64aac.aac", "logo": null}, {"name": "Skyrock Abidjan", "url": "https://skyrock.fm/stream_webradio.php/mytuner_abidjan_64aac.aac", "logo": null}, {"name": "Skyrock Hit U.S", "url": "https://skyrock.fm/stream_webradio.php/mytuner_hit-us_64aac.aac", "logo": null}, {"name": "Skyrock Klassiks", "url": "https://skyrock.fm/stream_webradio.php/mytuner_klassiks_64aac.aac", "logo": null}, {"name": "Skyrock La Nocturne", "url": "https://skyrock.fm/stream_webradio.php/mytuner_nocturne_64aac.aac", "logo": null}, {"name": "Skyrock PLM", "url": "https://skyrock.fm/stream_webradio.php/mytuner_plm_64aac.aac", "logo": null}, {"name": "Skyrock Premier sur le Rap", "url": "https://skyrock.fm/stream_webradio.php/mytuner_1er-rap_64aac.aac", "logo": null}, {"name": "Fun Radio FRANCE", "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webDQcCCwwIBwMFBgUABAwDDg", "logo": null}, {"name": "RMC", "url": "https://rmc2hdslive-lh.akamaihd.net/i/DVMR_RMC@167269/master.m3u8", "logo": null}, {"name": "NOSTALGIE", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30601/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "NOSTALGIE 100% FRANCAIS 80", "url": "https://scdn.nrjaudio.fm/adwz1/fr/56164/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-100-Francais-80", "logo": null}, {"name": "NOSTALGIE 80 LES TUBES N° 1", "url": "https://scdn.nrjaudio.fm/adwz1/fr/56726/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-80-Les-Tubes-N-1", "logo": null}, {"name": "NOSTALGIE BEACH PARTY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57258/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Beach-Party", "logo": null}, {"name": "NOSTALGIE BEST OF 60", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30615/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-60", "logo": null}, {"name": "NOSTALGIE BEST OF 70", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30613/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-1970", "logo": null}, {"name": "NOSTALGIE BEST OF 80", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30605/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-of-80", "logo": null}, {"name": "NOSTALGIE BEST OF 80 90", "url": "https://scdn.nrjaudio.fm/adwz1/fr/57831/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-Of-80-90", "logo": null}, {"name": "NOSTALGIE BEST OF 90", "url": "https://scdn.nrjaudio.fm/adwz1/fr/55206/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Best-Of-90", "logo": null}, {"name": "NOSTALGIE BLUES", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30639/mp3_128.mp3?origine=mytuner&aw_0_1st.station=Nostalgie-Blues", "logo": null}, {"name": "Chérie FM Soft Rock", "url": "http://mp3.live.tv-radio.com/3197/cherie_soft_rock/che_121156.mp3", "logo": null}, {"name": "FIP", "url": "https://direct.fipradio.fr/live/fip-midfi.mp3", "logo": null}, {"name": "FIP Nouveautés", "url": "https://direct.fipradio.fr/live/fip-webradio5.mp3?ID=radiofrance", "logo": null}, {"name": "FIP POP", "url": "https://stream.radiofrance.fr/fippop/fippop_hifi.m3u8", "logo": null}, {"name": "FIP autour de l’électro", "url": "https://icecast.radiofrance.fr/fipelectro-midfi.mp3", "logo": null}, {"name": "FIP autour du groove", "url": "http://direct.fipradio.fr/live/fip-webradio3.mp3", "logo": null}, {"name": "FIP autour du jazz", "url": "http://direct.fipradio.fr/live/fip-webradio2.mp3", "logo": null}, {"name": "FIP autour du monde", "url": "http://direct.fipradio.fr/live/fip-webradio4.mp3", "logo": null}, {"name": "FIP autour du reggae", "url": "https://direct.fipradio.fr/live/fip-webradio6.mp3", "logo": null}, {"name": "FIP autour du rock", "url": "http://direct.fipradio.fr/live/fip-webradio1.mp3", "logo": null}, {"name": "FIP à Bordeaux", "url": "https://direct.fipradio.fr/live/fipbordeaux-midfi.mp3", "logo": null}, {"name": "Mouv 100% Mix", "url": "https://direct.mouv.fr/live/mouvxtra-midfi.mp3", "logo": null}, {"name": "Mouv Classics", "url": "https://stream.radiofrance.fr/mouvclassics/mouvclassics_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv DanceHall", "url": "https://stream.radiofrance.fr/mouvdancehall/mouvdancehall_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Kids ‘n Family", "url": "https://stream.radiofrance.fr/mouvkidsnfamily/mouvkidsnfamily_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Rap Français", "url": "https://stream.radiofrance.fr/mouvrapfr/mouvrapfr_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv Rap US", "url": "https://stream.radiofrance.fr/mouvrapus/mouvrapus_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv RnB & Soul", "url": "https://stream.radiofrance.fr/mouvrnb/mouvrnb_hifi.m3u8?id=radiofrance", "logo": null}, {"name": "Mouv’", "url": "https://direct.mouv.fr/live/mouv-midfi.mp3", "logo": null}, {"name": "Europe 2", "url": "https://europe2.lmn.fm/europe2.aac?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Classics", "url": "https://wr.lmn.fm/vr-wr2.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Happy Rock Hours", "url": "https://wr.lmn.fm/vr-wr5.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Hits", "url": "https://wr.lmn.fm/vr-wr4.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 New", "url": "https://wr.lmn.fm/vr-wr1.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "Europe 2 Nouvelle Scène", "url": "https://wr.lmn.fm/vr-wr8.mp3?aw_0_1st.playerid=lgrdnwsEcouterRadioEnLignefr", "logo": null}, {"name": "RFM", "url": "https://stream.rfm.fr/rfm.aac?aw_0_1st.playerid=lgrdrnwsradio-en-lignefr", "logo": null}, {"name": "RFM 100 % Français", "url": "https://stream.rfm.fr/rfm-wr11.aac", "logo": null}, {"name": "RFM 100 % New Wave", "url": "https://stream.rfm.fr/rfm-wr12.aac", "logo": null}, {"name": "RFM 40 ans du Meilleur de la Musique", "url": "https://wr.lmn.fm/rfm-wr9.mp3?aw_0_1st.playerid=lgrdnws", "logo": null}, {"name": "RFM 70’s", "url": "https://stream.rfm.fr/rfm-wr16.aac", "logo": null}, {"name": "RFM 80’s", "url": "https://stream.rfm.fr/rfm-wr4.aac", "logo": null}, {"name": "RFM Christmas", "url": "https://wr.lmn.fm/rfm-wr6.mp3", "logo": null}, {"name": "RFM Collector", "url": "https://wr.lmn.fm/rfm-wr1.mp3?aw_0_1st.playerid=lgrdnwsMytuner", "logo": null}, {"name": "RFM Hit Party", "url": "https://stream.rfm.fr/rfm-wr8.aac", "logo": null}, {"name": "RFM La radio Couleur", "url": "http://rfm-wr3.akamaized.net/rfm.isml/wr3-rfm.m3u8", "logo": null}, {"name": "France Musique", "url": "https://direct.francemusique.fr/live/francemusique-midfi.mp3", "logo": null}, {"name": "France Musique Classique Plus", "url": "https://icecast.radiofrance.fr/francemusiqueclassiqueplus-midfi.mp3", "logo": null}, {"name": "France Musique La Contemporaine", "url": "https://direct.fipradio.fr/live/francemusiquelacontemporaine-hifi.mp3", "logo": null}, {"name": "100% Radio", "url": "https://100radio-albi.ice.infomaniak.ch/100radio-albi-128.mp3", "logo": null}, {"name": "100% Radio 90s", "url": "http://100radio-90.ice.infomaniak.ch/100radio-90-64.aac", "logo": null}, {"name": "100% Radio Souvenirs", "url": "https://100radio-souvenirs.ice.infomaniak.ch/100radio-souvenirs-128.mp3", "logo": null}, {"name": "123 Radio", "url": "https://play.vestaradio.com/123radio.mp3", "logo": null}, {"name": "47 FM", "url": "https://47fm.ice.infomaniak.ch/47fm-agen.mp3", "logo": null}, {"name": "4U Classic Rock", "url": "http://stric6.streamakaci.com/4uclassicrock.mp3", "logo": "http://radio.pervii.com/im/0/1549696980.jpg"}, {"name": "A4i Club Radio", "url": "http://31.12.68.206/A4iClubbingRadio.m3u", "logo": null}, {"name": "A9RADIO", "url": "http://195.154.217.103:8175/stream/1/", "logo": "http://radio.pervii.com/im/4/1577086984.jpg"}, {"name": "AIR GAY RADIO", "url": "https://ecmanager.pro-fhi.net:2505/stream", "logo": null}, {"name": "AQUITAINE FM", "url": "http://radio.myftp.biz:8000/stream.mp3", "logo": null}, {"name": "ATOMIC RADIO", "url": "http://radios.topymedia.com:8032/stream/1/", "logo": "http://radio.pervii.com/im/8/1594215758.jpg"}, {"name": "Addict Radio Lounge", "url": "https://www.addictradio.net/extern/pl/lounge/hditunes.m3u", "logo": null}, {"name": "Africa Mandingue", "url": "https://webradio1.ice.infomaniak.ch/webradio2-128.mp3", "logo": null}, {"name": "Agora Côte d’Azur", "url": "https://agoracotedazur.ice.infomaniak.ch/agoracotedazur.mp3", "logo": null}, {"name": "AirZen Musique", "url": "https://streams.airzen.fr/musique", "logo": null}, {"name": "AirZen Radio", "url": "https://streams.airzen.fr/", "logo": null}, {"name": "Airtime!", "url": "http://vh11367x.out.airtime.pro:8000/vh11367x_a", "logo": "http://radio.pervii.com/im/6/1549788306.jpg"}, {"name": "Allzic Radio Années 50", "url": "https://allzic29.ice.infomaniak.ch/allzic29.mp3", "logo": null}, {"name": "Allzic Radio COMPTINES", "url": "https://allzic05.ice.infomaniak.ch/allzic05.mp3", "logo": null}, {"name": "Allzic Radio DANCEFLOOR", "url": "https://allzic07.ice.infomaniak.ch/allzic07.mp3", "logo": null}, {"name": "Allzic Radio DISCO", "url": "https://allzic31.ice.infomaniak.ch/allzic31.aac", "logo": null}, {"name": "Allzic Radio ENFANTS 0/4 ANS", "url": "https://allzic14.ice.infomaniak.ch/allzic14.mp3", "logo": null}, {"name": "Allzic Radio HARD AND HEAVY", "url": "https://allzic18.ice.infomaniak.ch/allzic18.mp3", "logo": null}, {"name": "Allzic Radio LATINO", "url": "https://allzic39.ice.infomaniak.ch/allzic39.mp3", "logo": null}, {"name": "Alta Frequenza", "url": "https://altafrequenza.ice.infomaniak.ch/altafrequenza-128.mp3", "logo": null}, {"name": "Ambient Modern", "url": "http://163.172.169.217:80/stream/1/", "logo": "http://radio.pervii.com/im/7/1561156497.jpg"}, {"name": "B4B RADIO DISCO FUNK OFFICIAL", "url": "https://eu10.fastcast4u.com:8120/stream/1/", "logo": "http://radio.pervii.com/im/9/1537582629.jpg"}, {"name": "BBR CLUB 80 99.3", "url": "https://radio.streemlion.com:1935/stream", "logo": null}, {"name": "BPM FM", "url": "http://str20.creacast.com/bpm", "logo": null}, {"name": "BackLive", "url": "https://www.radioking.com/play/backlive", "logo": null}, {"name": "Beur Kabyle", "url": "http://broadcast.infomaniak.ch/beurfm-kabyle-high.mp3", "logo": null}, {"name": "Blackbox Latina", "url": "http://blackboxlatina.bcast.infomaniak.ch/blackboxlatina-128.mp3", "logo": null}, {"name": "Bob&#039;s Ska Radio (Low Bitrate)", "url": "http://51.255.235.165:5528/", "logo": "http://radio.pervii.com/im/9/1571841589.jpg"}, {"name": "Bob&apos;s Ska Radio", "url": "http://51.255.235.165:5528/stream/1/", "logo": "http://radio.pervii.com/im/1/1550051481.jpg"}, {"name": "Brasiltuga", "url": "https://node-16.zeno.fm/r7crx0k167zuv", "logo": null}, {"name": "CFTA-FM", "url": "http://176.31.118.39:14808/stream/1/", "logo": "http://radio.pervii.com/im/0/1550155110.jpg"}, {"name": "CHERIE FM", "url": "https://scdn.nrjaudio.fm/adwz2/fr/30201/mp3_128.mp3?origine=mytuner", "logo": null}, {"name": "CHERIE HAPPY", "url": "https://scdn.nrjaudio.fm/adwz1/fr/30331/mp3_128.mp3?origine=mytuner&aw_0_1st.station=CHERIE-HAPPY", "logo": null}, {"name": "Canal108 Webradio", "url": "https://www.radioking.com/play/canal-108", "logo": null}, {"name": "Cannes Radio", "url": "https://stream.rcs.revma.com/2ykc70sauwzuv.mp3", "logo": null}, {"name": "Cause Commune", "url": "https://stream.causecommune.fm/voixdulat_mp3", "logo": null}, {"name": "Chante France 70&#039;s", "url": "https://chantefrance70s.ice.infomaniak.ch/chantefrance70s-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Chante France 80&#039;s", "url": "https://chantefrance80s.ice.infomaniak.ch/chantefrance80s-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Chante France Emotion", "url": "https://chantefranceemotion.ice.infomaniak.ch/chantefranceemotion-128.mp3", "logo": "http://radio.pervii.com/im/6/1537455356.jpg"}, {"name": "Cocktail FM", "url": "https://listen.radioking.com/radio/245467/stream/289642", "logo": null}, {"name": "Commodexplorer Radio", "url": "https://manager3.streamradio.fr:1105/stream", "logo": null}, {"name": "Comète FM", "url": "http://str2.creacast.com/cometefm", "logo": null}, {"name": "Crooner Radio Barbra Streisand", "url": "https://direct.croonerradio.fr/croonerradio-barbrastreisand-midfi.mp3", "logo": null}, {"name": "Crooner Radio Classic Gold", "url": "https://croonerradio_classicgold.ice.infomaniak.ch/croonerradio-classicgold-midfi.mp3", "logo": null}, {"name": "Crooner Radio Premium", "url": "http://stream.crooner.fr/enc1_crooner_sd", "logo": null}]; // To be filled
+
+    const radioGrid = document.getElementById('radio-grid');
+    const searchInput = document.getElementById('search-input');
+    const audioPlayer = document.getElementById('audio-player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const currentName = document.getElementById('current-name');
+    const currentStatus = document.getElementById('current-status');
+    const currentLogo = document.getElementById('current-logo');
+    const volumeSlider = document.getElementById('volume-slider');
+    const loadingSpinner = document.getElementById('loading-spinner');
+
+    let currentRadio = null;
+
+    function init() {
+        renderRadios(radioData);
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = radioData.filter(r => r.name.toLowerCase().includes(term));
+            renderRadios(filtered);
+        });
+
+        playBtn.addEventListener('click', togglePlay);
+
+        volumeSlider.addEventListener('input', (e) => {
+            audioPlayer.volume = e.target.value;
+        });
+
+        audioPlayer.addEventListener('playing', () => {
+            playIcon.textContent = '⏸';
+            currentStatus.textContent = 'En lecture';
+            document.body.classList.remove('buffering');
+            document.body.classList.add('playing');
+            updateMediaSession();
+        });
+
+        audioPlayer.addEventListener('pause', () => {
+            playIcon.textContent = '▶';
+            currentStatus.textContent = 'Pause';
+            document.body.classList.remove('playing');
+        });
+
+        audioPlayer.addEventListener('waiting', () => {
+            document.body.classList.add('buffering');
+        });
+
+        audioPlayer.addEventListener('error', () => {
+            currentStatus.textContent = 'Erreur de lecture';
+            playIcon.textContent = '▶';
+            document.body.classList.remove('buffering');
+        });
+
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
+            navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
+            navigator.mediaSession.setActionHandler('stop', () => {
+                audioPlayer.pause();
+                audioPlayer.src = '';
+            });
+        }
+    }
+
+    function renderRadios(radios) {
+        radioGrid.innerHTML = '';
+        radios.forEach(radio => {
+            const card = document.createElement('div');
+            card.className = 'radio-card';
+            if (currentRadio && currentRadio.url === radio.url) {
+                card.classList.add('active');
+            }
+
+            const logo = document.createElement('div');
+            logo.className = 'logo-placeholder';
+            if (radio.logo) {
+                logo.style.backgroundImage = `url(${radio.logo})`;
+                logo.textContent = '';
+            } else {
+                logo.textContent = radio.name.charAt(0);
+            }
+
+            const name = document.createElement('div');
+            name.className = 'radio-name';
+            name.textContent = radio.name;
+
+            card.appendChild(logo);
+            card.appendChild(name);
+            card.addEventListener('click', () => selectRadio(radio));
+            radioGrid.appendChild(card);
+        });
+    }
+
+    function selectRadio(radio) {
+        currentRadio = radio;
+        currentName.textContent = radio.name;
+        currentStatus.textContent = 'Chargement...';
+        currentLogo.textContent = radio.logo ? '' : radio.name.charAt(0);
+        currentLogo.style.backgroundImage = radio.logo ? `url(${radio.logo})` : 'none';
+
+        audioPlayer.src = radio.url;
+        audioPlayer.play();
+        playBtn.disabled = false;
+
+        document.querySelectorAll('.radio-card').forEach(c => {
+            c.classList.toggle('active', c.querySelector('.radio-name').textContent === radio.name);
+        });
+
+        updateMediaSession();
+    }
+
+    function togglePlay() {
+        if (audioPlayer.paused) {
+            audioPlayer.play();
+        } else {
+            audioPlayer.pause();
+        }
+    }
+
+    function updateMediaSession() {
+        if ('mediaSession' in navigator && currentRadio) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: currentRadio.name,
+                artist: 'Radio Direct',
+                album: 'Streaming',
+                artwork: currentRadio.logo ? [
+                    { src: currentRadio.logo, sizes: '96x96', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '128x128', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '192x192', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '256x256', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '384x384', type: 'image/jpeg' },
+                    { src: currentRadio.logo, sizes: '512x512', type: 'image/jpeg' },
+                ] : [
+                    { src: 'https://via.placeholder.com/512?text=Radio', sizes: '512x512', type: 'image/png' }
+                ]
+            });
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
