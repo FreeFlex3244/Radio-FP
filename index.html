@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://logo.clearbit.com https://www.google.com https://*.gstatic.com https://via.placeholder.com; media-src *; connect-src *;">
     <title>Radio France Mobile & Auto</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
@@ -288,6 +289,34 @@
             font-size: 2rem;
         }
 
+        #voice-search {
+            position: fixed;
+            top: 12px;
+            right: 15px;
+            z-index: 1001;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.car-mode #voice-search {
+            top: auto !important;
+            bottom: 140px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            font-size: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+        }
+
+        body.theme-yt { --accent-color: #ff0000; }
+        body.theme-auto { --accent-color: #1a73e8; }
+
         body.car-mode .current-logo {
             width: 70px;
             height: 70px;
@@ -335,10 +364,14 @@
         <button id="car-mode-toggle" class="mode-toggle" title="Mode Voiture">
             🚗 <span>Auto</span>
         </button>
+        <select id="theme-selector" class="mode-toggle" style="padding: 2px 5px; font-size: 0.8rem;">
+            <option value="spotify">Spotify</option>
+            <option value="yt">YouTube Music</option>
+            <option value="auto">Auto Blue</option>
+        </select>
     </div>
     <div class="search-box" style="flex: 1; display: flex; align-items: center; gap: 5px; max-width: 400px;">
         <input type="text" id="search-input" placeholder="Rechercher...">
-        <button id="voice-search" class="mode-toggle" style="padding: 0.5rem;" title="Recherche vocale">🎤</button>
     </div>
 </header>
 
@@ -370,6 +403,7 @@
 </div>
 
 <audio id="audio-player" playsinline preload="none"></audio>
+<button id="voice-search" class="mode-toggle" title="Recherche vocale">🎤</button>
 
 <script>
     const radioData =
@@ -385,10 +419,14 @@
     const currentLogo = document.getElementById('current-logo');
     const carModeToggle = document.getElementById('car-mode-toggle');
     const voiceSearchBtn = document.getElementById('voice-search');
+    const themeSelector = document.getElementById('theme-selector');
 
     let favorites = JSON.parse(localStorage.getItem('radio-favorites') || '[]');
     let currentRadio = null;
     let isCarMode = localStorage.getItem('car-mode') === 'true';
+    let currentTheme = localStorage.getItem('theme') || 'spotify';
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
 
     function init() {
         if (isCarMode) {
@@ -396,9 +434,16 @@
             carModeToggle.classList.add('active');
         }
 
+        applyTheme(currentTheme);
+        themeSelector.value = currentTheme;
+
         renderRadios();
 
         searchInput.addEventListener('input', () => renderRadios());
+
+        themeSelector.addEventListener('change', (e) => {
+            applyTheme(e.target.value);
+        });
 
         carModeToggle.addEventListener('click', () => {
             isCarMode = !isCarMode;
@@ -444,6 +489,7 @@
             playIcon.textContent = '⏸';
             currentStatus.textContent = 'En direct';
             document.body.classList.remove('buffering');
+            retryCount = 0;
             updateMediaSession();
         });
 
@@ -457,11 +503,8 @@
             currentStatus.textContent = 'Chargement...';
         });
 
-        audioPlayer.addEventListener('error', () => {
-            currentStatus.textContent = 'Erreur de flux';
-            playIcon.textContent = '▶';
-            document.body.classList.remove('buffering');
-        });
+        audioPlayer.addEventListener('error', handleAudioError);
+        audioPlayer.addEventListener('stalled', handleAudioError);
 
         if ('mediaSession' in navigator) {
             navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
@@ -551,6 +594,17 @@
         });
     }
 
+    function applyTheme(theme) {
+        document.body.classList.remove('theme-yt', 'theme-auto');
+        if (theme !== 'spotify') {
+            document.body.classList.add(`theme-${theme}`);
+        }
+        currentTheme = theme;
+        localStorage.setItem('theme', theme);
+        const color = theme === 'yt' ? '#ff0000' : (theme === 'auto' ? '#1a73e8' : '#1db954');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', color);
+    }
+
     function toggleFavorite(radio) {
         const index = favorites.indexOf(radio.url);
         if (index > -1) {
@@ -561,12 +615,31 @@
         localStorage.setItem('radio-favorites', JSON.stringify(favorites));
     }
 
+    function handleAudioError() {
+        if (currentRadio && !audioPlayer.paused && retryCount < MAX_RETRIES) {
+            retryCount++;
+            currentStatus.textContent = `Reconnexion... (${retryCount})`;
+            setTimeout(() => {
+                if (currentRadio) {
+                    audioPlayer.src = currentRadio.url;
+                    audioPlayer.load();
+                    audioPlayer.play().catch(() => {});
+                }
+            }, 2000);
+        } else if (retryCount >= MAX_RETRIES) {
+            currentStatus.textContent = 'Flux indisponible';
+            playIcon.textContent = '▶';
+            document.body.classList.remove('buffering');
+        }
+    }
+
     function selectRadio(radio) {
         if (currentRadio && currentRadio.url === radio.url && !audioPlayer.paused) {
             togglePlay();
             return;
         }
 
+        retryCount = 0;
         currentRadio = radio;
         currentName.textContent = radio.name;
         currentStatus.textContent = 'Chargement...';
@@ -576,7 +649,7 @@
 
         audioPlayer.src = radio.url;
         audioPlayer.load();
-        audioPlayer.play();
+        audioPlayer.play().catch(() => {});
         playBtn.disabled = false;
 
         document.querySelectorAll('.radio-card').forEach(c => {
