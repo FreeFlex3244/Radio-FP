@@ -1,8 +1,11 @@
-const CACHE_NAME = 'radio-v1';
+const CACHE_NAME = 'radio-v2';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './css/style.css',
+  './js/radios.js',
+  './js/app.js'
 ];
 
 self.addEventListener('install', event => {
